@@ -1,7 +1,6 @@
 %% Declare key structures
 algorithm = Algorithm();
 problem = Problem();
-solution = Solution();
 
 %% Register problem name
 problem.name = "OptimClimb";
@@ -102,7 +101,7 @@ ncontrols = problem.phases(1).ncontrols;
 nstates = problem.phases(1).nstates;
 
 % TODO: Definir MatrixXd?
-x_guess = MatrixXd(nstates, nnodes);
+x_guess = zeros(nstates, nnodes);
 
 x_guess.row(0) = x0 * ones(1, nnodes);
 x_guess.row(1) = y0 * ones(1, nnodes);
@@ -113,3 +112,41 @@ x_guess.row(4) = E0 * ones(1, nnodes);
 problem.phases(1).guess.controls = zeros(ncontrols, nnodes);
 problem.phases(1).guess.states = x_guess;
 problem.phases(1).guess.time = linspace(0.0, 45.0, nnodes);
+
+%% Enter algorithm options
+algorithm.nlp_iter_max = 5000;
+algorithm.nlp_tolerance = 1.e-6;
+algorithm.nlp_method = "IPOPT";
+algorithm.scaling = "automatic";
+algorithm.derivatives = "automatic";
+% algorithm.mesh_refinement = "automatic";
+algorithm.collocation_method = "trapezoidal";
+% algorithm.defect_scaling = "jacobian-based";
+% algorithm.ode_tolerance = 1.e-5;
+
+%% Call the tool to solve the problem
+solution = solve(problem, algorithm);
+
+%% Extract solution data
+x = solution.get_states_in_phase(1);
+u = solution.get_controls_in_phase(1);
+t = solution.get_time_in_phase(1);
+lambda = solution.get_dual_costates_in_phase(1);
+H = solution.get_dual_hamiltonian_in_phase(1);
+stx = x.row(1);
+sty = x.row(2);
+stvx = x.row(3);
+stvy = x.row(4);
+stEn = x.row(5);
+
+%% Save solution data to files
+save("OptimClimb_solution.mat", "x", "u", "t", "lambda", "H");
+
+%% Plot results
+plot(t, stx);
+plot(t, sty);
+plot(t, stvx);
+plot(t, stvy);
+plot(t, x);
+plot(t, u);
+plot(t, stEn);

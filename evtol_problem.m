@@ -2,21 +2,6 @@
 clc; clear;
 
 %%
-% for test only
-x = [
-    0, 0, 0, 0, 0; % sx
-    0, 0, 0, 0, 0; % sy
-    10, 20, 30, 40, 50; % vx
-    5, 15, 25, 35, 45; % vy
-    100, 200, 300, 400, 500 % E
-];
-
-u = [
-    100, 200, 300, 400, 500; % Tx
-    50, 150, 250, 350, 450 % Ty
-];
-
-%%
 % Dynamics parameters
 p.environment.g = 9.78;  % m/s^2 gravity
 p.environment.rho = 1.2;  % kg/m^3 air density
@@ -31,74 +16,133 @@ p.aircraft.fuselage.St = 1.47;  % fuselage top area
 
 p.aircraft.wing.S = 4.0;  % wing area
 p.aircraft.wing.e = 0.9;  % wing span efficiency factor
-p.aircraft.wing.CD_p = 0.0437;  % wing profile drag coefficient
+p.aircraft.wing.CD_p = 0.0437;  % wing parasite drag coefficient
 p.aircraft.wing.AR = 20.0;  % wing aspect ratio
 p.aircraft.wing.CL_zero = 0.28;  % wing lift coefficient at zero angle of attack
 p.aircraft.wing.CL_alpha = 4.00;  % wing lift coefficient slope
 p.aircraft.wing.alpha_fus = 0 * (pi / 180);  % wing angle of attack
-p.aircraft.wing.sigmoid.n_grid = 4.0;  % wing lift coefficient slope factor
+p.aircraft.wing.sigmoid.M = 4.0;  % wing lift coefficient slope factor
 p.aircraft.wing.sigmoid.alpha_0 = 20 * (pi / 180);  % wing lift coefficient zero-lift angle
 
 % Trajectory parameters
 duration = 45;  % s
 
-% Initial State:
-% [sx; sy; vx; vy; E]
-x0 = zeros(5, 1);  % initial state
-xF = [1000; 100; 25; 0; 0];  % final state
-
-% Initial Control:
-% [Tx; Ty]
-u0 = zeros(2, 1);  % initial control
-uF = zeros(2, 1);  % final control
-
-
 %% Set up function handles
-dynamics = @(t,x,u)( dyn_evtol(x,u,p) );
 
-% path_obj = @(t,x,u)( path_obj(t,x,u) );  % path objective (L(·) - integrand of Lagrange Term)
-bnd_obj = @(x0, xF, t0, tF)( bnd_obj(x0, xF, t0, tF, []) );  % boundary objective (φ(·) - Mayer Term)
+% Objective functions
+phi = @(x0, xF, t0, tF)( bnd_obj(x0,xF,t0,tF,[]) );  % boundary objective (φ(·) - Mayer Term)
+L = @(t,x,u)( path_obj(t,x,u) );  % path objective (L(·) - integrand of Lagrange Term)
 
-obj_fun = @(t,x,u)( objective(t,x,u,[],bnd_obj) );  % objective function (J(·))
+obj_fun = @(t,x,u)( objective(t,x,u,phi,L) );  % objective function (J(·))
 
-f = @(t,x,u)( defects(t,x,u,dynamics) );  % defect constraints (f(·))
-g = @(x0, xF, t0, tF)( bnd_cst(x0, xF, t0, tF, []) );  % boundary constraint (g(·))
-h = @(t,x,u)( path_cst(t,x,u) );  % path constraint (h(·))
+% Constraint functions
+f = @(t,x,u)( dyn_evtol(x,u,p) );  % dynamics function (f(·))
+zeta = @(dt,x,f)( defects(dt,x,f) );  % defect constraints (ζ(·))
+g = @(t,x,u)( path_cst(t,x,u) );  % path constraint (g(·))
+h = @(x0, xF, t0, tF)( bnd_cst(x0,xF,t0,tF) );  % boundary constraint (h(·))
 
-cst_fun = @(t,x,u)( constraints(t,x,u,f,g,h) );  % constraint function (g(·) and h(·))
+cst_fun = @(t,x,u)( constraints(t,x,u,f,zeta,g,h) );  % constraint function
 
 
 %% Set up problem bounds
-initial_time.low = 0;
-initial_time.upp = 0;
-final_time.low = duration;
-final_time.upp = duration;
+% initial_time.low = 0;
+% initial_time.upp = 0;
+% final_time.low = duration;
+% final_time.upp = duration;
 
-initial_state.low = x0;
-initial_state.upp = x0;
-final_state.low = xF;
-final_state.upp = xF;
+% initial_state.low = x0;
+% initial_state.upp = x0;
+% final_state.low = xF;
+% final_state.upp = xF;
+
+state.low = [0; -10; 0; -5; 0];
+state.upp = [1000; 110; 35; 6; Inf];
 
 control.low = [0; 0];
 control.upp = [1800; 2600];
 
 
-
 %% Solver options
-n_grid = 40;  % number of discretization points
-nlpOpt = optimset('Display','iter','MaxFunEvals',1e5);
+n_grid = 100;  % number of discretization points
 
+options = optimoptions('fmincon');
+options.Display = 'iter';
+options.MaxFunEvals = 1e5;
 
 
 %% Initial guess at trajectory
 % Interpolate the guess at the grid-points for transcription:
 time = linspace(0, duration, n_grid);
-z_guess0 = repmat([x0; u0], 1, n_grid);
+% z_guess = zeros(7, n_grid);
+x0_guess = [0; 0; 0; 0; 0];
+xF_guess = [1000; 100; 25; 0; 1e6];
+x_guess = interp1([0, duration]', [x0_guess, xF_guess]', time')';
 
-z_guess = [time; z_guess0];
+u0_guess = [0; 0];
+uF_guess = [1800; 0];
+u_guess = interp1([0, duration]', [u0_guess, uF_guess]', time')';
+
+z_guess = [x_guess; u_guess];
 
 
 %% Solve!
+fun = @(z)( obj_fun(time, z(1:5,:), z(6:7,:)) );
+A = []; b = []; Aeq = []; beq = [];
+lb = repmat([state.low; control.low], 1, n_grid);
+ub = repmat([state.upp; control.upp], 1, n_grid);
+nonlcon = @(z)( cst_fun(time, z(1:5,:), z(6:7,:)) );
 
+tic;
+[z,fval,exitflag,output] = fmincon(fun,z_guess,A,b,Aeq,beq,lb,ub,nonlcon,options);
+nlp_time = toc;
 
+%%
+dx = dyn_evtol(z(1:5,:), z(6:7,:), p);
 
+%%
+% Plot the results
+set(groot, 'defaultTextInterpreter', 'latex');
+
+figure;
+subplot(3,2,[1,2]);
+plot(z(1,:), z(2,:));
+title('Position');
+xlabel('$s_x$ (m)');
+ylabel('$s_y$ (m)');
+
+subplot(3,2,3);
+plot(time, z(3,:));
+title('Horizontal Speed');
+xlabel('t (s)');
+ylabel('$v_x$ (m/s)');
+
+subplot(3,2,4);
+plot(time, z(4,:));
+title('Vertical Speed');
+xlabel('t (s)');
+ylabel('$v_y$ (m/s)');
+
+subplot(3,2,5);
+plot(time, z(6,:));
+title('Horizontal Thrust');
+xlabel('t (s)');
+ylabel('$T_x$ (N)');
+
+subplot(3,2,6);
+plot(time, z(7,:));
+title('Vertical Thrust');
+xlabel('t (s)');
+ylabel('$T_y$ (N)');
+
+figure;
+subplot(2,1,1);
+plot(time, z(5,:));
+title('Battery Energy');
+xlabel('t (s)');
+ylabel('$E$ (J)');
+
+subplot(2,1,2);
+plot(time, dx(5,:));
+title('Battery Power');
+xlabel('t (s)');
+ylabel('$\dot{E}$ (W)');

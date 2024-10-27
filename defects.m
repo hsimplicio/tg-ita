@@ -1,11 +1,11 @@
-function d = defects(dt, x, f)
+function d = defects(dt, x, dynamics)
     % This function computes the defects for
     % direct transcription using the Trapezoidal Rule.
     %
     % Inputs:
     %   dt: scalar = time step
-    %   x: [n_state, n_grid] = matrix
-    %   f: [n_state, n_grid] = matrix
+    %   x: [n_state, n_grid] = matrix of states
+    %   dynamics: [n_state, n_grid-1] = matrix of state derivatives
     %
     % Outputs:
     %   d: [n_state, n_grid-1] = matrix of defects
@@ -19,8 +19,8 @@ function d = defects(dt, x, f)
     x_low = x(:,index_low);
     x_upp = x(:,index_upp);
 
-    f_low = f(:,index_low);
-    f_upp = f(:,index_upp);
+    f_low = dynamics(:,index_low);
+    f_upp = dynamics(:,index_upp);
 
     % Apply the Trapezoidal Rule
     d = x_upp - x_low - 0.5 * dt * (f_low + f_upp);

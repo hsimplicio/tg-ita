@@ -10,5 +10,5 @@ function cost = path_obj(t, x, u)
     %   cost = [1,n] = computed cost
     %
 
-    cost = zeros(1, size(t));
+    cost = zeros(1, length(t));
 end

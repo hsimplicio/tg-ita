@@ -16,7 +16,7 @@ function vi = induced_velocity(vh, V, alpha)
 
     options = optimset('TolX', 1e-6);
 
-    vi = zeros(size(vh));
+    vi = zeros(1,length(vh));
     for i = 1:length(vh)
         vi(i) = fzero(@(w) vi_func(w,vh(i),V(i),alpha(i)), [-50,50], options);
     end

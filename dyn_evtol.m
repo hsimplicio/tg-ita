@@ -36,6 +36,8 @@ function dx = dyn_evtol(x, u, p)
     % Compute aerodynamic parameters
     V = sqrt(vx .^ 2 + vy .^ 2);
     gamma = compute_gamma(vx,vy);
+    alpha_y = gamma;
+    alpha_x = pi / 2 - gamma;
 
     % Compute the aerodynamic forces
     [L, D] = compute_lift_drag(vx,vy,p);
@@ -48,8 +50,8 @@ function dx = dyn_evtol(x, u, p)
     vh_x = sqrt(T_rotor_x / (2 * rho * A));
     vh_y = sqrt(T_rotor_y / (2 * rho * A));
 
-    vi_x = induced_velocity(vh_x, V, pi / 2 - gamma);
-    vi_y = induced_velocity(vh_y, V, gamma);
+    vi_x = induced_velocity(vh_x, V, alpha_x);
+    vi_y = induced_velocity(vh_y, V, alpha_y);
 
     % Power requirements
     P_rotor_x = T_rotor_x .* vi_x;
@@ -57,7 +59,8 @@ function dx = dyn_evtol(x, u, p)
     P_arm_x = 2.0 * P_rotor_x * (1 + chi);
     P_arm_y = 2.0 * P_rotor_y * (1 + chi);
     P_ind = 1.0 * P_arm_x + 2.0 * P_arm_y;
-    P_forward = 2.0 * T_rotor_x .* V .* sin(pi / 2 - gamma) + 4.0 * T_rotor_y .* V .* sin(gamma);
+
+    P_forward = Tx .* V .* sin(alpha_x) + Ty .* V .* sin(alpha_y);
 
     % Compute the derivatives
     dx = [

@@ -39,7 +39,8 @@ function [L, D] = compute_lift_drag(vx, vy, p)
     M = p.aircraft.wing.sigmoid.M;
     alpha_0 = p.aircraft.wing.sigmoid.alpha_0;
 
-    alpha = -compute_gamma(vx, vy);  %
+    gamma = compute_gamma(vx, vy);
+    alpha = -gamma;
     alpha_wing = alpha + alpha_fus; % Wing angle of attack
     
     % Compute Wing Lift Coefficient

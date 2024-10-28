@@ -73,16 +73,85 @@ options.MaxFunEvals = 1e5;
 %% Initial guess at trajectory
 % Interpolate the guess at the grid-points for transcription:
 time = linspace(0, duration, n_grid);
-% z_guess = zeros(7, n_grid);
 x0_guess = [0; 0; 0; 0; 0];
-xF_guess = [1000; 100; 25; 0; 1e6];
-x_guess = interp1([0, duration]', [x0_guess, xF_guess]', time')';
+xF_guess = [0; 0; 0; 0; Inf];
+u0_guess = [0; p.aircraft.m * p.environment.g];
+uF_guess = [0; p.aircraft.m * p.environment.g];
 
-u0_guess = [0; 0];
-uF_guess = [1800; 0];
+dx0_guess = dyn_evtol(x0_guess, u0_guess, p);
+
+xF_guess(5) = x0_guess(5) + dx0_guess(5) * duration;
+
+x_guess = interp1([0, duration]', [x0_guess, xF_guess]', time')';
 u_guess = interp1([0, duration]', [u0_guess, uF_guess]', time')';
 
 z_guess = [x_guess; u_guess];
+
+figure;
+subplot(4,2,[1,2]);
+plot(time, x_guess(5,:));
+title('Battery State');
+xlabel('t (s)');
+ylabel('E (J)');
+hold on;
+plot([0, duration], [x0_guess(5), xF_guess(5)], 'ro');
+hold off;
+
+subplot(4,2,3);
+plot(time, x_guess(1,:));
+title('Horizontal Position');
+xlabel('$t$ (s)');
+ylabel('$s_x$ (m)');
+hold on;
+plot(time(1), x0_guess(1), 'ro');
+plot(time(end), xF_guess(1), 'rx');
+hold off;
+
+subplot(4,2,4);
+plot(time, x_guess(2,:));
+title('Vertical Position');
+xlabel('$t$ (s)');
+ylabel('$s_y$ (m)');
+hold on;
+plot(time(1), x0_guess(2), 'ro');
+plot(time(end), xF_guess(2), 'rx');
+hold off;
+
+subplot(4,2,5);
+plot(time, x_guess(3,:));
+title('Horizontal Speed');
+xlabel('t (s)');
+ylabel('$v_x$ (m/s)');
+hold on;
+plot([0, duration], [x0_guess(3), xF_guess(3)], 'ro');
+hold off;
+
+subplot(4,2,6);
+plot(time, x_guess(4,:));
+title('Vertical Speed');
+xlabel('t (s)');
+ylabel('$v_y$ (m/s)');
+hold on;
+plot([0, duration], [x0_guess(4), xF_guess(4)], 'ro');
+hold off;
+
+subplot(4,2,7);
+plot(time, u_guess(1,:));
+title('Horizontal Thrust');
+xlabel('t (s)');
+ylabel('$T_x$ (N)');
+hold on;
+plot([0, duration], [u0_guess(1), uF_guess(1)], 'ro');
+hold off;
+
+subplot(4,2,8);
+plot(time, u_guess(2,:));
+title('Vertical Thrust');
+xlabel('t (s)');
+ylabel('$T_y$ (N)');
+hold on;
+plot([0, duration], [u0_guess(2), uF_guess(2)], 'ro');
+hold off;
 
 
 %% Solve!

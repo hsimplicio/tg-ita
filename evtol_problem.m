@@ -166,52 +166,65 @@ tic;
 nlp_time = toc;
 
 %%
-dx = dyn_evtol(z(1:5,:), z(6:7,:), p);
+% Extract the results
+x = z(1:5,:);
+u = z(6:7,:);
+
+dx = dyn_evtol(x, u, p);
 
 %%
 % Plot the results
 set(groot, 'defaultTextInterpreter', 'latex');
 
 figure;
-subplot(3,2,[1,2]);
-plot(z(1,:), z(2,:));
-title('Position');
-xlabel('$s_x$ (m)');
+subplot(4,2,[1,2]);
+plot(time, dx(5,:));
+title('Battery Rate');
+xlabel('t (s)');
+ylabel('$\dot{E}$ (W)');
+
+subplot(4,2,3);
+plot(time, x(1,:));
+title('Horizontal Position');
+xlabel('$t$ (s)');
+ylabel('$s_x$ (m)');
+
+subplot(4,2,4);
+plot(time, x(2,:));
+title('Vertical Position');
+xlabel('$t$ (s)');
 ylabel('$s_y$ (m)');
 
-subplot(3,2,3);
-plot(time, z(3,:));
+subplot(4,2,5);
+plot(time, x(3,:));
 title('Horizontal Speed');
 xlabel('t (s)');
 ylabel('$v_x$ (m/s)');
 
-subplot(3,2,4);
-plot(time, z(4,:));
+subplot(4,2,6);
+plot(time, x(4,:));
 title('Vertical Speed');
 xlabel('t (s)');
 ylabel('$v_y$ (m/s)');
 
-subplot(3,2,5);
-plot(time, z(6,:));
+subplot(4,2,7);
+plot(time, u(1,:));
 title('Horizontal Thrust');
 xlabel('t (s)');
 ylabel('$T_x$ (N)');
 
-subplot(3,2,6);
-plot(time, z(7,:));
+subplot(4,2,8);
+plot(time, u(2,:));
 title('Vertical Thrust');
 xlabel('t (s)');
 ylabel('$T_y$ (N)');
 
 figure;
-subplot(2,1,1);
-plot(time, z(5,:));
-title('Battery Energy');
+plot(time, x(5,:), 'DisplayName', 'Battery State');
+hold on;
+plot(time, dx(5,:), 'DisplayName', 'Battery Rate');
+hold off;
+title('Battery');
 xlabel('t (s)');
-ylabel('$E$ (J)');
-
-subplot(2,1,2);
-plot(time, dx(5,:));
-title('Battery Power');
-xlabel('t (s)');
-ylabel('$\dot{E}$ (W)');
+ylabel('Battery State / Rate');
+legend show;

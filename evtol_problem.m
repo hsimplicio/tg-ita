@@ -63,7 +63,8 @@ control.upp = [1800; 2600];
 
 
 %% Solver options
-n_grid = 100;  % number of discretization points
+n_grid = [50,80,150,190,250];  % number of discretization points
+% n_grid = [100,150];
 
 options = optimoptions('fmincon');
 options.Display = 'iter';
@@ -155,15 +156,33 @@ hold off;
 
 
 %% Solve!
+n_iter = length(n_grid);
+solution(n_iter) = struct();
+for i = 1:n_iter
+    disp(['Iteration ', num2str(i), ' of ', num2str(n_iter)]);
+    if i > 1
+        time_old = time;
+        time = linspace(0, duration, n_grid(i));
+        z_guess = solution(i-1).z;
+        z_guess = interp1(time_old, z_guess', time)';
+    end
+
+    % Set up the problem
 fun = @(z)( obj_fun(time, z(1:5,:), z(6:7,:)) );
 A = []; b = []; Aeq = []; beq = [];
-lb = repmat([state.low; control.low], 1, n_grid);
-ub = repmat([state.upp; control.upp], 1, n_grid);
+    lb = repmat([state.low; control.low], 1, n_grid(i));
+    ub = repmat([state.upp; control.upp], 1, n_grid(i));
 nonlcon = @(z)( cst_fun(time, z(1:5,:), z(6:7,:)) );
 
-tic;
-[z,fval,exitflag,output] = fmincon(fun,z_guess,A,b,Aeq,beq,lb,ub,nonlcon,options);
-nlp_time = toc;
+    [z, fval, exitflag, output] = fmincon(fun,z_guess,A,b,Aeq,beq,lb,ub,nonlcon,options);
+    solution(i).z = z;
+    solution(i).fval = fval;
+    solution(i).exitflag = exitflag;
+    solution(i).output = output;
+end
+
+z = solution(end).z;
+save('solution.mat', 'z');
 
 %%
 % Extract the results

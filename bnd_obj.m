@@ -6,6 +6,7 @@ function cost = bnd_obj(x0, xF, t0, tF, p)
     %   t0: [1,1] = initial time
     %   tF: [1,1] = final time
     %   p: struct = parameters
+    %
     % Output:
     %   cost: scalar = computed boundary objective value
     %

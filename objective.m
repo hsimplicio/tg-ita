@@ -16,10 +16,10 @@ function cost = objective(t, x, u, bnd_obj, path_obj)
     % Compute the cost integral along trajectory
     if ~isempty(path_obj)
         dt = (t(end) - t(1)) / (length(t) - 1);
-        weights = [0.5, ones(1, length(t)-2), 0.5];
+        weights = [0.5; ones(length(t)-2, 1); 0.5];
         integrands = path_obj(t,x,u);  % Calculate the integrands of the cost function
-        integral_cost = dt * integrands .* weights;  % Trapezoidal integration
-        cost = cost + sum(integral_cost);
+        integral_cost = dt * integrands * weights;  % Trapezoidal integration
+        cost = cost + integral_cost;
     end
 
     % Compute the cost at the boundaries of the trajectory

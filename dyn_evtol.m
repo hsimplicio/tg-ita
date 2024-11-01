@@ -2,12 +2,12 @@ function dx = dyn_evtol(x, u, p)
     % Define the dynamics for the EVTOL problem
     %
     % INPUTS:
-    %   x = [5,n] = [sx; sy; vx; vy; E] = state matrix
-    %   u = [2,n] = [Tx; Ty] = control matrix
-    %   p = parameter struct
+    %   x: [5,n] = [sx; sy; vx; vy; E] = state matrix
+    %   u: [2,n] = [Tx; Ty] = control matrix
+    %   p: parameter struct
     %
     % OUTPUTS:
-    %   dx = [5,n] = [vx; vy; dvx; dvy; dE] = derivative of state matrix
+    %   dx: [5,n] = [vx; vy; dvx; dvy; dE] = derivative of state matrix
     %
     arguments
         x double

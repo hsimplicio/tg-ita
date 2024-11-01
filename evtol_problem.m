@@ -72,88 +72,113 @@ options.MaxFunEvals = 1e5;
 
 
 %% Initial guess at trajectory
-% Interpolate the guess at the grid-points for transcription:
-time = linspace(0, duration, n_grid);
-x0_guess = [0; 0; 0; 0; 0];
-xF_guess = [0; 0; 0; 0; Inf];
-u0_guess = [0; p.aircraft.m * p.environment.g];
-uF_guess = [0; p.aircraft.m * p.environment.g];
+time = linspace(0, duration, n_grid(1));
+x0 = [0; 0; 0; 0; 0];
+xF = [1000; 100; 25; 0; 1e6];
 
-dx0_guess = dyn_evtol(x0_guess, u0_guess, p);
 
-xF_guess(5) = x0_guess(5) + dx0_guess(5) * duration;
+% % Linear interpolation initial guess
+% u0 = [0; p.aircraft.m * p.environment.g];
+% uF = [0; p.aircraft.m * p.environment.g];
+% dx0 = dyn_evtol(x0, u0, p);
+% xF(5) = x0(5) + dx0(5) * duration;
 
-x_guess = interp1([0, duration]', [x0_guess, xF_guess]', time')';
-u_guess = interp1([0, duration]', [u0_guess, uF_guess]', time')';
+% x_guess = interp1([0, duration]', [x0, xF]', time')';
+% u_guess = interp1([0, duration]', [u0, uF]', time')';
+
+
+% Physics-based initial guess
+sx = x0(1) + x0(3)*time + (3*(xF(1)-x0(1))/duration^2 - 2*x0(3)/duration - xF(3)/duration)*time.^2 + (-2*(xF(1)-x0(1))/duration^3 + (x0(3)+xF(3))/duration^2)*time.^3;
+sy = x0(2) + x0(4)*time + (3*(xF(2)-x0(2))/duration^2 - 2*x0(4)/duration - xF(4)/duration)*time.^2 + (-2*(xF(2)-x0(2))/duration^3 + (x0(4)+xF(4))/duration^2)*time.^3;
+vx = gradient(sx, time);
+vy = gradient(sy, time);
+
+
+% Calculate thrust needed at each point
+Tx = zeros(1,length(time));
+Ty = zeros(1,length(time));
+dE = zeros(1,length(time));
+
+for i = 1:length(time)
+    % Get state at this time
+    x_i = [sx(i); sy(i); vx(i); vy(i); 0];
+    
+    % Calculate minimum thrust needed to maintain trajectory
+    [L, D] = compute_lift_drag(vx(i), vy(i), p);
+    gamma = compute_gamma(vx(i), vy(i));
+    
+    % Solve for required thrust
+    Tx(i) = D*cos(gamma) + L*sin(gamma);
+    Ty(i) = D*sin(gamma) - L*cos(gamma) + p.aircraft.m*p.environment.g;
+    
+    % Calculate power at this point
+    u_i = [Tx(i); Ty(i)];
+    dx_i = dyn_evtol(x_i, u_i, p);
+    dE(i) = dx_i(5);
+end
+
+% Integrate power to get energy
+E = x0(5) + cumtrapz(time, dE);
+
+% Combine into state and control guesses
+x_guess = [sx; sy; vx; vy; E];
+u_guess = [Tx; Ty];
+
+dx_guess = dyn_evtol(x_guess, u_guess, p);
+
+% set(groot, 'defaultTextInterpreter', 'latex');
+
+% figure;
+% subplot(4,2,[1,2]);
+% plot(time, dx_guess(5,:));
+% title('Battery Rate');
+% xlabel('t (s)');
+% ylabel('$\dot{E}$ (W)');
+
+% subplot(4,2,3);
+% plot(time, x_guess(1,:));
+% title('Horizontal Position');
+% xlabel('$t$ (s)');
+% ylabel('$s_x$ (m)');
+
+% subplot(4,2,4);
+% plot(time, x_guess(2,:));
+% title('Vertical Position');
+% xlabel('$t$ (s)');
+% ylabel('$s_y$ (m)');
+
+% subplot(4,2,5);
+% plot(time, x_guess(3,:));
+% title('Horizontal Speed');
+% xlabel('t (s)');
+% ylabel('$v_x$ (m/s)');
+
+% subplot(4,2,6);
+% plot(time, x_guess(4,:));
+% title('Vertical Speed');
+% xlabel('t (s)');
+% ylabel('$v_y$ (m/s)');
+
+% subplot(4,2,7);
+% plot(time, u_guess(1,:));
+% title('Horizontal Thrust');
+% xlabel('t (s)');
+% ylabel('$T_x$ (N)');
+
+% subplot(4,2,8);
+% plot(time, u_guess(2,:));
+% title('Vertical Thrust');
+% xlabel('t (s)');
+% ylabel('$T_y$ (N)');
+
+% figure;
+% plot(x_guess(1,:), x_guess(2,:));
+% title('Trajectory');
+% xlabel('x (m)');
+% ylabel('y (m)');
+
 
 z_guess = [x_guess; u_guess];
-
-figure;
-subplot(4,2,[1,2]);
-plot(time, x_guess(5,:));
-title('Battery State');
-xlabel('t (s)');
-ylabel('E (J)');
-hold on;
-plot([0, duration], [x0_guess(5), xF_guess(5)], 'ro');
-hold off;
-
-subplot(4,2,3);
-plot(time, x_guess(1,:));
-title('Horizontal Position');
-xlabel('$t$ (s)');
-ylabel('$s_x$ (m)');
-hold on;
-plot(time(1), x0_guess(1), 'ro');
-plot(time(end), xF_guess(1), 'rx');
-hold off;
-
-subplot(4,2,4);
-plot(time, x_guess(2,:));
-title('Vertical Position');
-xlabel('$t$ (s)');
-ylabel('$s_y$ (m)');
-hold on;
-plot(time(1), x0_guess(2), 'ro');
-plot(time(end), xF_guess(2), 'rx');
-hold off;
-
-subplot(4,2,5);
-plot(time, x_guess(3,:));
-title('Horizontal Speed');
-xlabel('t (s)');
-ylabel('$v_x$ (m/s)');
-hold on;
-plot([0, duration], [x0_guess(3), xF_guess(3)], 'ro');
-hold off;
-
-subplot(4,2,6);
-plot(time, x_guess(4,:));
-title('Vertical Speed');
-xlabel('t (s)');
-ylabel('$v_y$ (m/s)');
-hold on;
-plot([0, duration], [x0_guess(4), xF_guess(4)], 'ro');
-hold off;
-
-subplot(4,2,7);
-plot(time, u_guess(1,:));
-title('Horizontal Thrust');
-xlabel('t (s)');
-ylabel('$T_x$ (N)');
-hold on;
-plot([0, duration], [u0_guess(1), uF_guess(1)], 'ro');
-hold off;
-
-subplot(4,2,8);
-plot(time, u_guess(2,:));
-title('Vertical Thrust');
-xlabel('t (s)');
-ylabel('$T_y$ (N)');
-hold on;
-plot([0, duration], [u0_guess(2), uF_guess(2)], 'ro');
-hold off;
-
 
 %% Solve!
 n_iter = length(n_grid);

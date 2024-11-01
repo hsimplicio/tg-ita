@@ -193,12 +193,12 @@ for i = 1:n_iter
     end
 
     % Set up the problem
-fun = @(z)( obj_fun(time, z(1:5,:), z(6:7,:)) );
-A = []; b = []; Aeq = []; beq = [];
+    fun = @(z)( obj_fun(time, z(1:5,:), z(6:7,:)) );
+    A = []; b = []; Aeq = []; beq = [];
     lb = repmat([state.low; control.low], 1, n_grid(i));
     ub = repmat([state.upp; control.upp], 1, n_grid(i));
-nonlcon = @(z)( cst_fun(time, z(1:5,:), z(6:7,:)) );
-
+    nonlcon = @(z)( cst_fun(time, z(1:5,:), z(6:7,:)) );
+    
     [z, fval, exitflag, output] = fmincon(fun,z_guess,A,b,Aeq,beq,lb,ub,nonlcon,options);
     solution(i).z = z;
     solution(i).fval = fval;

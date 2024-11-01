@@ -38,10 +38,10 @@ obj_fun = @(t,x,u)( objective(t,x,u,phi,[]) );  % objective function (J(·))
 % Constraint functions
 f = @(t,x,u)( dyn_evtol(x,u,p) );  % dynamics function (f(·))
 zeta = @(dt,x,f)( defects(dt,x,f) );  % defect constraints (ζ(·))
-g = @(t,x,u)( path_cst(t,x,u) );  % path constraint (g(·))
+% g = @(t,x,u)( path_cst(t,x,u) );  % path constraint (g(·))
 h = @(x0, xF, t0, tF)( bnd_cst(x0,xF,t0,tF) );  % boundary constraint (h(·))
 
-cst_fun = @(t,x,u)( constraints(t,x,u,f,zeta,g,h) );  % constraint function
+cst_fun = @(t,x,u)( constraints(t,x,u,f,zeta,[],h) );  % constraint function
 
 
 %% Set up problem bounds

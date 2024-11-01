@@ -56,7 +56,7 @@ cst_fun = @(t,x,u)( constraints(t,x,u,f,zeta,g,h) );  % constraint function
 % final_state.upp = xF;
 
 state.low = [0; -10; 0; -5; 0];
-state.upp = [1000; 110; 35; 6; Inf];
+state.upp = [1000; 110; 35; 6; 1e8];
 
 control.low = [0; 0];
 control.upp = [1800; 2600];

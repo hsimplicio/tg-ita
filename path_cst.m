@@ -1,5 +1,12 @@
 function [c, ceq] = path_cst(t, x, u)
-    % 
+    % Only include constraints that cannot be expressed as simple bounds
+    %
+    % Example of potential nonlinear constraints:
+    % c = [
+    %     sqrt(x(3,:).^2 + x(4,:).^2) - v_max;  % velocity magnitude constraint
+    %     sqrt(u(1,:).^2 + u(2,:).^2) - T_max;  % total thrust constraint
+    % ];
+    %
     % Inputs:
     %   t: [1,n] = time vector
     %   x: [5,n] = state variables
@@ -14,21 +21,7 @@ function [c, ceq] = path_cst(t, x, u)
         x double
         u double
     end
-
-    c = [
-        (x(1,:) - 1000)';  % sx <= 1000
-        (x(2,:) - 110)';  % sy <= 110
-        (x(3,:) - 35)';  % vx <= 35
-        (x(4,:) - 6)';  % vy <= 6
-        (x(1,:) - 0)';  % sx >= 0
-        (x(2,:) - -10)';  % sy >= -10
-        (x(3,:) - 0)';  % vx >= 0
-        (x(4,:) - -5)';  % vy >= -5
-        (x(5,:) - 0)';  % E >= 0
-        (u(1,:) - 1800)';  % Fx <= 1800
-        (u(2,:) - 2600)';  % Fy <= 2600
-        (u(1,:) - 0)';  % Fx >= 0
-        (u(2,:) - 0)';  % Fy >= 0
-    ];
-    ceq = [];
+    
+    c = [];  % No additional inequality constraints needed
+    ceq = [];  % No equality constraints needed
 end

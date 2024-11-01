@@ -36,8 +36,8 @@ function dx = dyn_evtol(x, u, p)
     % Compute aerodynamic parameters
     V = sqrt(vx .^ 2 + vy .^ 2);
     gamma = compute_gamma(vx,vy);
-    alpha_y = gamma;
-    alpha_x = pi / 2 - gamma;
+    alpha_y = pi/2 - gamma;  % Angle between velocity and vertical (rotor disk normal)
+    alpha_x = gamma;         % Angle between velocity and horizontal (rotor disk normal)
 
     % Compute the aerodynamic forces
     [L, D] = compute_lift_drag(vx,vy,p);
@@ -50,15 +50,26 @@ function dx = dyn_evtol(x, u, p)
     vh_x = sqrt(T_rotor_x / (2 * rho * A));
     vh_y = sqrt(T_rotor_y / (2 * rho * A));
 
+    % Debug output
+    % disp(['    Hover velocity x: ' num2str(vh_x) ' m/s']);
+    % disp(['    Hover velocity y: ' num2str(vh_y) ' m/s']);
+
     vi_x = induced_velocity(vh_x, V, alpha_x);
     vi_y = induced_velocity(vh_y, V, alpha_y);
+
+    % Debug output
+    % disp(['    Induced velocity x: ' num2str(vi_x) ' m/s']);
+    % disp(['    Induced velocity y: ' num2str(vi_y) ' m/s']);
 
     % Power requirements
     P_rotor_x = T_rotor_x .* vi_x;
     P_rotor_y = T_rotor_y .* vi_y;
     P_arm_x = 2.0 * P_rotor_x * (1 + chi);
-    P_arm_y = 2.0 * P_rotor_y * (1 + chi);
-    P_ind = 1.0 * P_arm_x + 2.0 * P_arm_y;
+    P_arm_y = 4.0 * P_rotor_y * (1 + chi);
+    P_ind = P_arm_x + P_arm_y;
+
+    % Debug output
+    % disp(['    Power per rotor: ' num2str(P_rotor_y) ' W']);
 
     P_forward = Tx .* V .* sin(alpha_x) + Ty .* V .* sin(alpha_y);
 

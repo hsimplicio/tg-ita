@@ -191,16 +191,42 @@ u = z(6:7,:);
 
 dx = dyn_evtol(x, u, p);
 
+gamma = compute_gamma(x(3,:), x(4,:));  
+
+% Check constraints
+[c, ceq] = constraints(time,x,u,f,zeta,[],h);
+[max_violation, max_idx] = max(abs([c; ceq]));
+disp(['Maximum constraint violation: ' num2str(max_violation)]);
+
+% Determine which constraint has max violation
+total_len = length([c; ceq]);
+if max_idx <= length(c)
+    disp(['Max violation occurs in inequality constraint #' num2str(max_idx)]);
+    disp(' ');
+else
+    eq_idx = max_idx - length(c);
+    disp(['Max violation occurs in equality constraint #' num2str(eq_idx)]);
+    disp(' ');
+end
+
+check_constraints(time, x, u, p);
+
 %%
 % Plot the results
 set(groot, 'defaultTextInterpreter', 'latex');
 
 figure;
-subplot(4,2,[1,2]);
+subplot(4,2,1);
 plot(time, dx(5,:));
 title('Battery Rate');
 xlabel('t (s)');
 ylabel('$\dot{E}$ (W)');
+
+subplot(4,2,2);
+plot(time, gamma);
+title('Flight Path Angle');
+xlabel('t (s)');
+ylabel('$\gamma$ (rad)');
 
 subplot(4,2,3);
 plot(time, x(1,:));
@@ -240,10 +266,12 @@ ylabel('$T_y$ (N)');
 
 figure;
 plot(time, x(5,:), 'DisplayName', 'Battery State');
-hold on;
-plot(time, dx(5,:), 'DisplayName', 'Battery Rate');
-hold off;
 title('Battery');
 xlabel('t (s)');
-ylabel('Battery State / Rate');
-legend show;
+ylabel('Battery State');
+
+figure;
+plot(x(1,:), x(2,:));
+title('Trajectory');
+xlabel('x (m)');
+ylabel('y (m)');

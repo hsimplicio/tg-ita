@@ -47,8 +47,10 @@ function [L, D] = compute_lift_drag(vx, vy, p)
     straight_CL = CL_zero_wing + CL_alpha_wing * alpha_wing;
     
     % Apply sigmoid function to merge linear and flat plate models
-    sigma = sigmoid(M * (alpha_wing - alpha_0)) + sigmoid(-M * (alpha_wing + alpha_0));
-    
+    sig_minus = exp(-M * (alpha_wing - alpha_0));
+    sig_plus = exp(M * (alpha_wing + alpha_0));
+    sigma = (1 + sig_minus + sig_plus) ./ ((1 + sig_minus) .* (1 + sig_plus));
+
     CD = CD_p_wing + straight_CL .^ 2 / (pi * e_wing * AR_wing);
     CL = sigma .* (2 * sign(alpha_wing) .* sin(alpha_wing) .^ 2 .* cos(alpha_wing)) + (1 - sigma) .* straight_CL;
     

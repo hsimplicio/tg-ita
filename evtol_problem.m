@@ -31,9 +31,9 @@ duration = 45;  % s
 
 % Objective functions
 phi = @(x0, xF, t0, tF)( bnd_obj(x0,xF,t0,tF,[]) );  % boundary objective (φ(·) - Mayer Term)
-L = @(t,x,u)( path_obj(t,x,u) );  % path objective (L(·) - integrand of Lagrange Term)
+% L = @(t,x,u)( path_obj(t,x,u) );  % path objective (L(·) - integrand of Lagrange Term)
 
-obj_fun = @(t,x,u)( objective(t,x,u,phi,L) );  % objective function (J(·))
+obj_fun = @(t,x,u)( objective(t,x,u,phi,[]) );  % objective function (J(·))
 
 % Constraint functions
 f = @(t,x,u)( dyn_evtol(x,u,p) );  % dynamics function (f(·))

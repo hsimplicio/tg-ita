@@ -207,7 +207,7 @@ for i = 1:n_iter
 end
 
 z = solution(end).z;
-save('solution.mat', 'z');
+save(['data/solution-base-t', num2str(duration), '.mat'], 'z');
 
 %%
 % Extract the results

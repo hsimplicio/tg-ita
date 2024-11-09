@@ -1,17 +1,20 @@
-function vi = induced_velocity(vh, V, alpha)
-    % Compute the induced velocity
+function vi = computeInducedVelocity(vh, V, alpha)
+    % Computes induced velocity using momentum theory
     %
-    % INPUTS:
-    % vh = [1,n] = induced velocity at hover
-    % V = [1,n] = velocity magnitude
-    % alpha = [1,n] = angle of attack
+    % Inputs:
+    %   vh: [1,n] hover induced velocity
+    %   V: [1,n] free stream velocity
+    %   alpha: [1,n] angle between free stream and rotor disk normal
     %
+    % Outputs:
+    %   vi: [1,n] induced velocity
+    
     arguments
         vh double
         V double
         alpha double
     end
-
+    
     % For hover (V=0), vi should equal vh
     hover_condition = (V < 1e-6);
 

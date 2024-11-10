@@ -2,7 +2,7 @@ function params = evtolParams()
     % Returns the EVTOL problem parameters
     
     % Environment parameters
-    params.environment.GRAVITY = 9.81;          % Gravitational acceleration [m/s^2]
+    params.environment.GRAVITY = 9.78;          % Gravitational acceleration [m/s^2]
     params.environment.AIR_DENSITY = 1.2;       % Air density [kg/m^3]
     
     % Aircraft parameters

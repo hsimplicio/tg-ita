@@ -9,6 +9,7 @@ classdef TrajectoryProblem < handle
         % Time properties
         t0 {mustBeNumeric}  % Initial time
         tF {mustBeNumeric}  % Final time
+        timeGrid = {}  % Cell array of time grids
         
         % Boundary conditions
         x0  % Initial state
@@ -336,8 +337,7 @@ classdef TrajectoryProblem < handle
             end
             
             % Linear interpolation for states
-            time = linspace(obj.t0, obj.tF, obj.nGrid(1));
-            x_guess = interp1([obj.t0, obj.tF]', [obj.x0, obj.xF]', time')';
+            x_guess = interp1([obj.t0, obj.tF]', [obj.x0, obj.xF]', obj.timeGrid{1}')';
             
             % Initialize controls to maintain hover
             % This is a simple initialization - might need to be customized for different problems
@@ -355,11 +355,14 @@ classdef TrajectoryProblem < handle
             end
             
             nIter = length(obj.nGrid);
+
+            for i = 1:nIter
+                obj.timeGrid{i} = linspace(obj.t0, obj.tF, obj.nGrid(i));
+            end
             solution(nIter) = struct();
             
             for i = 1:nIter
                 disp(['Iteration ', num2str(i), ' of ', num2str(nIter)]);
-                time = linspace(obj.t0, obj.tF, obj.nGrid(i));
                 
                 % Generate or interpolate initial guess
                 if i == 1
@@ -367,25 +370,24 @@ classdef TrajectoryProblem < handle
                         zGuess = obj.generateInitialGuess();
                     end
                 else
-                    timeOld = linspace(obj.t0, obj.tF, obj.nGrid(i-1));
                     zGuess = [solution(i-1).z.state; solution(i-1).z.control];
-                    zGuess = interp1(timeOld, zGuess', time)';
+                    zGuess = interp1(obj.timeGrid{i-1}, zGuess', obj.timeGrid{i})';
                 end
                 
                 % Set up the problem
-                fun = @(z)( obj.objective(time, z(1:obj.nx,:), z(obj.nx+1:end,:)) );
+                fun = @(z)( obj.objective(obj.timeGrid{i}, z(1:obj.nx,:), z(obj.nx+1:end,:)) );
                 A = []; b = []; Aeq = []; beq = [];
                 lb = repmat([obj.xLow; obj.uLow], 1, obj.nGrid(i));
                 ub = repmat([obj.xUpp; obj.uUpp], 1, obj.nGrid(i));
-                nonlcon = @(z)( obj.constraints(time, z(1:obj.nx,:), z(obj.nx+1:end,:)) );
+                nonlcon = @(z)( obj.constraints(obj.timeGrid{i}, z(1:obj.nx,:), z(obj.nx+1:end,:)) );
                 
                 [z, fval, exitflag, output] = fmincon(fun,zGuess,A,b,Aeq,beq,lb,ub,nonlcon,obj.solverOptions{i});
                 solution(i).nGrid = obj.nGrid(i);
                 solution(i).z = struct();
-                solution(i).z.time = time;
+                solution(i).z.time = obj.timeGrid{i};
                 solution(i).z.state = z(1:obj.nx,:);
                 solution(i).z.control = z(obj.nx+1:end,:);
-                solution(i).z.derivatives = obj.dynamics(time, solution(i).z.state, solution(i).z.control, obj.parameters);
+                solution(i).z.derivatives = obj.dynamics(obj.timeGrid{i}, solution(i).z.state, solution(i).z.control);
                 solution(i).fval = fval;
                 solution(i).exitflag = exitflag;
                 solution(i).output = output;
@@ -393,7 +395,7 @@ classdef TrajectoryProblem < handle
                 % Check constraints if a check function is provided
                 if ~isempty(obj.constraintsCheck)
                     solution(i).violations = obj.constraintsCheck(...
-                        time, ...
+                        obj.timeGrid{i}, ...
                         solution(i).z.state, ...
                         solution(i).z.control, ...
                         obj.parameters);

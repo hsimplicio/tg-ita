@@ -2,9 +2,9 @@ function zGuess = physicalInitialGuess(problem, plotFlag)
     % Generate a physics-based initial guess for the EVTOL problem
     
     % Extract problem parameters
-    p = problem.getParameters();
-    mass = p.aircraft.mass;
-    g = p.environment.GRAVITY;
+    params = problem.getParameters();
+    mass = params.aircraft.mass;
+    g = params.environment.GRAVITY;
     
     % Extract time bounds, boundary conditions, and grid size
     [t0, tF] = problem.getTimeBounds();
@@ -23,12 +23,9 @@ function zGuess = physicalInitialGuess(problem, plotFlag)
          (-2*(xF(2)-x0(2))/duration^3 + (x0(4)+xF(4))/duration^2)*tRel.^3;
     velX = gradient(posX, time);  % Note: gradient still uses original time step
     velY = gradient(posY, time);
-
-    % Combine into state vector
-    x = [posX; posY; velX; velY; zeros(1,length(time))];
     
     % Calculate minimum thrust needed to maintain trajectory
-    [lift, drag] = computeLiftDrag(velX, velY, p);
+    [lift, drag] = computeLiftDrag(velX, velY, params);
     gamma = computeFlightAngle(velX, velY);
     
     % Solve for required thrust
@@ -36,24 +33,25 @@ function zGuess = physicalInitialGuess(problem, plotFlag)
     thrustY = drag .* sin(gamma) - lift .* cos(gamma) + mass .* g;
     
     % Calculate power at this point
-    u = [thrustX; thrustY];
-    dx = evtolDynamics(time, x, u, p);
+    state = [posX; posY; velX; velY; zeros(1,length(time))];
+    control = [thrustX; thrustY];
+    dx = evtolDynamics(time, state, control, params);
     dE = dx(5,:);
 
     % Integrate power to get energy
     energy = x0(5) + cumtrapz(time, dE);
 
-    x(5,:) = energy;
+    state(5,:) = energy;
 
     % Combine into guess
-    zGuess = [x; u];
+    zGuess = [state; control];
 
     % Plot if requested
     if plotFlag
         guess = struct();
         guess.time = time;
-        guess.state = x;
-        guess.control = u;
+        guess.state = state;
+        guess.control = control;
         plotEvtolResults('Initial Guess', guess);
     end
 end

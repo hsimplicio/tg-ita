@@ -1,4 +1,4 @@
-function [c, ceq] = evaluateConstraints(time, state, control, dynamics, defectConstraints, pathConstraints, boundaryConstraints, params)
+function [c, ceq] = evaluateConstraints(time, state, control, dynamics, defectConstraints, pathConstraints, boundaryConstraints)
     % Define the collocation constraints
     % Inputs:
     %   time: [1,n] = time vector
@@ -8,7 +8,6 @@ function [c, ceq] = evaluateConstraints(time, state, control, dynamics, defectCo
     %   defectConstraints: function = defect constraints function
     %   pathConstraints: function = path constraints function
     %   boundaryConstraints: function = boundary constraints function
-    %   params: struct = parameters
     % Outputs:
     %   c = [m,1] = inequality constraints
     %   ceq = [m,1] = equality constraints
@@ -21,7 +20,7 @@ function [c, ceq] = evaluateConstraints(time, state, control, dynamics, defectCo
     % Evaluate defects constraints
     if ~isempty(defectConstraints)
         timeStep = (time(end) - time(1)) / (length(time) - 1);
-        derivatives = dynamics(time, state, control, params);
+        derivatives = dynamics(time, state, control);
         defects = defectConstraints(timeStep, state, derivatives);
         ceq = [ceq; defects(:)];
     end

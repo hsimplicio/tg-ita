@@ -2,13 +2,13 @@ function L = pathObjective(time, state, control, params)
     % Evaluates running cost for the EVTOL problem
     %
     % Inputs:
-    %   time: time vector
-    %   state: state vector [x; y; vx; vy; E]
-    %   control: control vector [Tx; Ty]
+    %   time: [1,n] = time vector
+    %   state: [5,n] = state vector [x; y; vx; vy; E]
+    %   control: [2,n] = control vector [Tx; Ty]
     %   params: parameter struct
     %
     % Outputs:
-    %   L: instantaneous cost value
+    %   L: [1,n] = instantaneous cost value
     
     arguments
         time double
@@ -18,5 +18,5 @@ function L = pathObjective(time, state, control, params)
     end
     
     % No running cost (only terminal cost)
-    L = 0;
+    L = zeros(1, length(time));
 end

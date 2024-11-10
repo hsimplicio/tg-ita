@@ -32,7 +32,6 @@ function [c, ceq] = boundaryConstraints(x0, xF, t0, tF, boundaryConditions)
     finalVelX = xF(3);
     finalVelY = xF(4);
     
-    
     % Equality constraints
     ceq = [
         % Initial conditions

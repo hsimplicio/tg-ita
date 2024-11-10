@@ -21,8 +21,7 @@ function J = evaluateObjective(time, state, control, boundaryObjective, pathObje
     % Add Lagrange term if provided
     if ~isempty(pathObjective)
         % Trapezoidal integration of the path objective
-        dt = (time(end) - time(1)) / (length(time) - 1);
         integrand = pathObjective(time, state, control);
-        J = J + dt * trapz(integrand);
+        J = J + trapz(time, integrand);
     end
 end 

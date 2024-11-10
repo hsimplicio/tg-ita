@@ -43,6 +43,10 @@ classdef TrajectoryProblem < handle
         nGrid = []  % Array of grid points for each iteration
         solverOptions = {}  % Cell array of options for each iteration
         
+        % Scaling factors
+        stateScaling
+        controlScaling
+        timeScaling
     end
     
     properties
@@ -73,6 +77,11 @@ classdef TrajectoryProblem < handle
             % Default time interval
             obj.t0 = 0;
             obj.tF = 1;
+            
+            % Initialize scaling factors to 1
+            obj.stateScaling = ones(nx, 1);
+            obj.controlScaling = ones(nu, 1);
+            obj.timeScaling = 1;
         end
         
         function setTimeBounds(obj, t0, tF)
@@ -374,13 +383,40 @@ classdef TrajectoryProblem < handle
                 end
                 
                 % Set up the problem
-                fun = @(z)( obj.objective(obj.timeGrid{i}, z(1:obj.nx,:), z(obj.nx+1:end,:)) );
+                % fun = @(z)( obj.objective(obj.timeGrid{i}, z(1:obj.nx,:), z(obj.nx+1:end,:)) );
                 A = []; b = []; Aeq = []; beq = [];
                 lb = repmat([obj.xLow; obj.uLow], 1, obj.nGrid(i));
                 ub = repmat([obj.xUpp; obj.uUpp], 1, obj.nGrid(i));
-                nonlcon = @(z)( obj.constraints(obj.timeGrid{i}, z(1:obj.nx,:), z(obj.nx+1:end,:)) );
+                % nonlcon = @(z)( obj.constraints(obj.timeGrid{i}, z(1:obj.nx,:), z(obj.nx+1:end,:)) );
                 
-                [z, fval, exitflag, output] = fmincon(fun,zGuess,A,b,Aeq,beq,lb,ub,nonlcon,obj.solverOptions{i});
+                % Scale the problem
+                scaledLb = lb ./ [repmat(obj.stateScaling, 1, obj.nGrid(i)); 
+                                 repmat(obj.controlScaling, 1, obj.nGrid(i))];
+                scaledUb = ub ./ [repmat(obj.stateScaling, 1, obj.nGrid(i)); 
+                                 repmat(obj.controlScaling, 1, obj.nGrid(i))];
+                
+                if ~isempty(zGuess)
+                    scaledGuess = zGuess ./ [repmat(obj.stateScaling, 1, obj.nGrid(i)); 
+                                            repmat(obj.controlScaling, 1, obj.nGrid(i))];
+                end
+                
+                % Modified objective and constraint functions to handle scaling
+                scaledFun = @(z)( obj.objective(obj.timeGrid{i} / obj.timeScaling, ...
+                    z(1:obj.nx,:) ./ obj.stateScaling, ...
+                    z(obj.nx+1:end,:) ./ obj.controlScaling) );
+                
+                scaledNonlcon = @(z)( obj.constraints(obj.timeGrid{i} / obj.timeScaling, ...
+                    z(1:obj.nx,:) ./ obj.stateScaling, ...
+                    z(obj.nx+1:end,:) ./ obj.controlScaling) );
+                
+                % Solve scaled problem
+                [z_scaled, fval, exitflag, output] = fmincon(scaledFun, scaledGuess, ...
+                    A, b, Aeq, beq, scaledLb, scaledUb, scaledNonlcon, obj.solverOptions{i});
+                
+                % Unscale solution
+                z = z_scaled .* [repmat(obj.stateScaling, 1, obj.nGrid(i)); 
+                                repmat(obj.controlScaling, 1, obj.nGrid(i))];
+                
                 solution(i).nGrid = obj.nGrid(i);
                 solution(i).z = struct();
                 solution(i).z.time = obj.timeGrid{i};
@@ -422,6 +458,29 @@ classdef TrajectoryProblem < handle
         function nGrid = getGridSize(obj)
             % Get grid size
             nGrid = obj.nGrid;
+        end
+
+        function setScaling(obj, type, factors)
+            % Set scaling factors for variables
+            % type: 'state', 'control', or 'time'
+            % factors: vector of scaling factors
+            
+            switch lower(type)
+                case 'state'
+                    validateattributes(factors, {'numeric'}, {'vector', 'positive', 'numel', obj.nx});
+                    obj.stateScaling = factors(:);
+                    
+                case 'control'
+                    validateattributes(factors, {'numeric'}, {'vector', 'positive', 'numel', obj.nu});
+                    obj.controlScaling = factors(:);
+                    
+                case 'time'
+                    validateattributes(factors, {'numeric'}, {'scalar', 'positive'});
+                    obj.timeScaling = factors;
+                    
+                otherwise
+                    error('Invalid scaling type. Must be ''state'', ''control'', or ''time''');
+            end
         end
     end
 end

@@ -150,7 +150,7 @@ classdef TrajectoryProblem < handle
                 try
                     time_test = [obj.t0, obj.tF];
                     val = hPathObjective(time_test, zeros(obj.nx,2), zeros(obj.nu,2), obj.parameters);
-                    validateattributes(val, {'numeric'}, {'scalar'});
+                    validateattributes(val, {'numeric'}, {'size', [1, numel(time_test)]});
                 catch ME
                     error('Invalid path objective function: %s', ME.message);
                 end

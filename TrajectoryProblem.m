@@ -123,7 +123,7 @@ classdef TrajectoryProblem < handle
             catch ME
                 error('Invalid dynamics function: %s', ME.message);
             end
-            obj.dynamics = hDynamics;
+            obj.dynamics = @(time, state, control) hDynamics(time, state, control, obj.parameters);
         end
         
         function setObjective(obj, hBoundaryObjective, hPathObjective)
@@ -215,8 +215,7 @@ classdef TrajectoryProblem < handle
                 obj.dynamics, ...
                 @computeDefects, ...
                 obj.pathConstraints, ...
-                obj.boundaryConstraints, ...
-                obj.parameters);
+                obj.boundaryConstraints);
         end
         
         function setParameters(obj, parameters)

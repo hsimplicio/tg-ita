@@ -34,7 +34,7 @@ x0 = [0; 0];         % Start at origin with zero velocity
 xF = [1; 0];         % End at x=1 with zero velocity
 problem.setBoundaryConditions(x0, xF);
 
-% %% Set scaling
+%% Set scaling
 % problem.setScaling('state', [1; 1]);   % States are already O(1)
 % problem.setScaling('control', 1);      % Control is already O(1)
 % problem.setScaling('time', 2);         % Time is already O(1)

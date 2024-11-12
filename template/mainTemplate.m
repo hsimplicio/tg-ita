@@ -40,13 +40,13 @@ xF = [1; 0];  % Final state
 problem.setBoundaryConditions(x0, xF);
 
 %% Set functions
-% Set dynamics
+% TODO: Set your dynamics function
 problem.setDynamics(@templateDynamics);
 
-% Set objective
+% TODO: Set your objective function
 problem.setObjective(@boundaryObjective, @pathObjective);
 
-% Set constraints
+% TODO: Set your constraints function
 problem.setConstraints(@boundaryConstraints, @pathConstraints);
 
 %% Set solver options
@@ -57,22 +57,23 @@ options.Display = 'iter';
 options.MaxFunEvals = 1e5;
 problem.setSolverOptions(options, nGrid);
 
-% Optional: Set constraint checking function
+%% Optional: Set constraint checking function
+% TODO: Set your constraint checking function
 problem.setConstraintsCheck(@checkConstraints);
 
-% Optional: Set variable names
+%% Optional: Set variable names
 % TODO: Set meaningful names for your states and controls
 problem.setVariableNames({'x1', 'x2'}, {'u1'});
 
-% Validate problem definition
+%% Validate problem definition
 problem.validate();
 
-% Solve the problem
+%% Solve the problem
 solution = problem.solveWithTrapezoidalCollocation();
 
-% Save the solution
+%% Save the solution
 mkdir('results');
 save('results/solution.mat', 'solution');
 
-% Plot results
+%% Plot results
 plotResults('Solution', solution(end).z, true); 

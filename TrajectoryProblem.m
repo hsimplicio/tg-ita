@@ -106,10 +106,10 @@ classdef TrajectoryProblem < handle
                     
             % Initialize boundary conditions struct
             obj.boundaryConditions = struct();
-            obj.boundaryConditions.t0 = obj.t0 / obj.timeScaling;
-            obj.boundaryConditions.tF = obj.tF / obj.timeScaling;
-            obj.boundaryConditions.x0 = obj.x0 / obj.stateScaling;
-            obj.boundaryConditions.xF = obj.xF / obj.stateScaling;
+            obj.boundaryConditions.t0 = obj.t0;
+            obj.boundaryConditions.tF = obj.tF;
+            obj.boundaryConditions.x0 = obj.x0;
+            obj.boundaryConditions.xF = obj.xF;
         end
 
         function setBoundaryConditions(obj, x0, xF)
@@ -178,8 +178,6 @@ classdef TrajectoryProblem < handle
                     validateattributes(factors, {'numeric'}, {'vector', 'positive', 'numel', obj.nx});
                     obj.stateScaling = factors(:);
                     obj.scaling.stateScaling = factors(:);
-                    obj.boundaryConditions.x0 = obj.x0 / obj.stateScaling;
-                    obj.boundaryConditions.xF = obj.xF / obj.stateScaling;
                 case 'control'
                     validateattributes(factors, {'numeric'}, {'vector', 'positive', 'numel', obj.nu});
                     obj.controlScaling = factors(:);
@@ -188,8 +186,6 @@ classdef TrajectoryProblem < handle
                     validateattributes(factors, {'numeric'}, {'scalar', 'positive'});
                     obj.timeScaling = factors;
                     obj.scaling.timeScaling = factors;
-                    obj.boundaryConditions.t0 = obj.t0 / obj.timeScaling;
-                    obj.boundaryConditions.tF = obj.tF / obj.timeScaling;
                 otherwise
                     error('Invalid scaling type. Must be ''state'', ''control'', or ''time''');
             end
@@ -279,10 +275,10 @@ classdef TrajectoryProblem < handle
                     bndConditions.tF = obj.boundaryConditions.tF / obj.timeScaling;
                 end
                 if isfield(obj.boundaryConditions, 'x0')
-                    bndConditions.x0 = obj.boundaryConditions.x0;
+                    bndConditions.x0 = obj.boundaryConditions.x0 / obj.stateScaling;
                 end
                 if isfield(obj.boundaryConditions, 'xF')
-                    bndConditions.xF = obj.boundaryConditions.xF;
+                    bndConditions.xF = obj.boundaryConditions.xF / obj.stateScaling;
                 end
                 obj.boundaryConstraints = @(x0, xF, t0, tF) hBoundaryConstraints(x0, xF, t0, tF, bndConditions);
             else

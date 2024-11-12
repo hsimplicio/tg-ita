@@ -194,16 +194,16 @@ classdef TrajectoryProblem < handle
         function setDynamics(obj, hDynamics)
             % Set dynamics function
             validateattributes(hDynamics, {'function_handle'}, {});
-            % % Test the function with dummy inputs
-            % time_test = zeros(1,1);
-            % x_test = zeros(obj.nx, 1);
-            % u_test = zeros(obj.nu, 1);
-            % try
-            %     dx = hDynamics(time_test, x_test, u_test, obj.parameters);
-            %     validateattributes(dx, {'numeric'}, {'vector', 'numel', obj.nx});
-            % catch ME
-            %     error('Invalid dynamics function: %s', ME.message);
-            % end
+            % Test the function with dummy inputs
+            time_test = zeros(1,1);
+            x_test = zeros(obj.nx, 1);
+            u_test = zeros(obj.nu, 1);
+            try
+                dx = hDynamics(time_test, x_test, u_test, obj.parameters);
+                validateattributes(dx, {'numeric'}, {'vector', 'numel', obj.nx});
+            catch ME
+                error('Invalid dynamics function: %s', ME.message);
+            end
             obj.dynamics = @(time, state, control) hDynamics(time, state, control, obj.parameters);
         end
         

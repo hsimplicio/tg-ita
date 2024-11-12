@@ -21,7 +21,7 @@ function [c, ceq] = pathConstraints(time, state, control, params)
     ceq = (E - E0)';  % Energy should be conserved
 
     % Debug output
-    disp('Energy conservation error:');
-    disp(['Max error: ', num2str(max(abs(ceq)))]);
-    disp(['Mean error: ', num2str(mean(abs(ceq)))]);
+    % disp('Energy conservation error:');
+    % disp(['Max error: ', num2str(max(abs(ceq)))]);
+    % disp(['Mean error: ', num2str(mean(abs(ceq)))]);
 end 

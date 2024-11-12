@@ -59,38 +59,38 @@ function violations = checkConstraints(time, state, control, params)
             'meanError', mean(velocityError));
     end
     
-    % Print violations if any
-    if ~isempty(fieldnames(violations))
-        disp('Constraint Violations Found:');
-        if ~isempty(fieldnames(violations.energy))
-            disp('Energy:');
-            disp(violations.energy);
-        end
-        if ~isempty(fieldnames(violations.velocity))
-            disp('Velocity:');
-            disp(violations.velocity);
-        end
-        if ~isempty(fieldnames(violations.state))
-            disp('State:');
-            if ~isempty(fieldnames(violations.state.x))
-                disp('sx:');
-                disp(violations.state.x);
-            end
-            if ~isempty(fieldnames(violations.state.y))
-                disp('sy:');
-                disp(violations.state.y);
-            end
-            if ~isempty(fieldnames(violations.state.v))
-                disp('v:');
-                disp(violations.state.v);
-            end
-        end
-        if ~isempty(fieldnames(violations.control))
-            disp('Control:');
-            if ~isempty(fieldnames(violations.control.theta))
-                disp('theta:');
-                disp(violations.control.theta);
-            end
-        end
-    end
+    % Debug: print violations if any
+    % if ~isempty(fieldnames(violations))
+    %     disp('Constraint Violations Found:');
+    %     if ~isempty(fieldnames(violations.energy))
+    %         disp('Energy:');
+    %         disp(violations.energy);
+    %     end
+    %     if ~isempty(fieldnames(violations.velocity))
+    %         disp('Velocity:');
+    %         disp(violations.velocity);
+    %     end
+    %     if ~isempty(fieldnames(violations.state))
+    %         disp('State:');
+    %         if ~isempty(fieldnames(violations.state.x))
+    %             disp('sx:');
+    %             disp(violations.state.x);
+    %         end
+    %         if ~isempty(fieldnames(violations.state.y))
+    %             disp('sy:');
+    %             disp(violations.state.y);
+    %         end
+    %         if ~isempty(fieldnames(violations.state.v))
+    %             disp('v:');
+    %             disp(violations.state.v);
+    %         end
+    %     end
+    %     if ~isempty(fieldnames(violations.control))
+    %         disp('Control:');
+    %         if ~isempty(fieldnames(violations.control.theta))
+    %             disp('theta:');
+    %             disp(violations.control.theta);
+    %         end
+    %     end
+    % end
 end 

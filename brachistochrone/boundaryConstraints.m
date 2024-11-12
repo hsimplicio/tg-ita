@@ -17,12 +17,12 @@ function [c, ceq] = boundaryConstraints(x0, xF, t0, tF, boundaryConditions)
     ];
 
     % Debug output
-    disp('Current boundary constraint values:');
-    disp(['Initial x: ', num2str(ceq(1))]);
-    disp(['Initial y: ', num2str(ceq(2))]);
-    disp(['Initial v: ', num2str(ceq(3))]);
-    disp(['Final x: ', num2str(ceq(4))]);
-    disp(['Final y: ', num2str(ceq(5))]);
+    % disp('Current boundary constraint values:');
+    % disp(['Initial x: ', num2str(ceq(1))]);
+    % disp(['Initial y: ', num2str(ceq(2))]);
+    % disp(['Initial v: ', num2str(ceq(3))]);
+    % disp(['Final x: ', num2str(ceq(4))]);
+    % disp(['Final y: ', num2str(ceq(5))]);
     
     % No inequality constraints
     c = [];

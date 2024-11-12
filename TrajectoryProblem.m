@@ -6,21 +6,23 @@ classdef TrajectoryProblem < handle
         nx  % Number of states
         nu  % Number of controls
         
-        % Time properties
+        % Time boundary conditions
         t0 {mustBeNumeric}  % Initial time
         tF {mustBeNumeric}  % Final time
         timeSpan = {}  % Cell array of time spans
+
+        % Boundary conditions
+        x0  % Initial state
+        xF  % Final state
+
+        % Boundary conditions struct
+        boundaryConditions
 
         % Time bounds
         t0Low {mustBeNumeric}  % Lower bound for initial time
         t0Upp {mustBeNumeric}  % Upper bound for initial time
         tFLow {mustBeNumeric}  % Lower bound for final time
         tFUpp {mustBeNumeric}  % Upper bound for final time
-        
-        % Boundary conditions
-        x0  % Initial state
-        xF  % Final state
-        boundaryConditions  % Boundary conditions struct
         
         % State and control bounds
         xLow  % Lower state bounds
@@ -72,19 +74,27 @@ classdef TrajectoryProblem < handle
             
             obj.nx = nx;
             obj.nu = nu;
-            
-            % Initialize with empty arrays
-            obj.x0 = zeros(nx, 1);
-            obj.xF = zeros(nx, 1);
+
+            % Initialize state and control bounds
             obj.xLow = -1e8*ones(nx, 1);
             obj.xUpp = 1e8*ones(nx, 1);
             obj.uLow = -1e8*ones(nu, 1);
             obj.uUpp = 1e8*ones(nu, 1);
+
+            % Initialize time bounds
+            obj.t0Low = -1e8;
+            obj.t0Upp = 1e8;
+            obj.tFLow = -1e8;
+            obj.tFUpp = 1e8;
             
-            % Default time interval
+            % Default time boundary conditions
             obj.t0 = 0;
             obj.tF = 1;
             obj.timeSpan{1} = [obj.t0, obj.tF];
+
+            % Initialize boundary conditions with empty arrays
+            obj.x0 = zeros(nx, 1);
+            obj.xF = zeros(nx, 1);
             
             % Initialize scaling factors to 1
             obj.stateScaling = ones(nx, 1);
@@ -98,12 +108,8 @@ classdef TrajectoryProblem < handle
             obj.boundaryConditions = struct();
             obj.boundaryConditions.t0 = obj.t0 / obj.timeScaling;
             obj.boundaryConditions.tF = obj.tF / obj.timeScaling;
-
-            % Initialize time bounds
-            obj.t0Low = -1e8;
-            obj.t0Upp = 1e8;
-            obj.tFLow = -1e8;
-            obj.tFUpp = 1e8;
+            obj.boundaryConditions.x0 = obj.x0 / obj.stateScaling;
+            obj.boundaryConditions.xF = obj.xF / obj.stateScaling;
         end
 
         function setBoundaryConditions(obj, x0, xF)
@@ -172,7 +178,8 @@ classdef TrajectoryProblem < handle
                     validateattributes(factors, {'numeric'}, {'vector', 'positive', 'numel', obj.nx});
                     obj.stateScaling = factors(:);
                     obj.scaling.stateScaling = factors(:);
-                    
+                    obj.boundaryConditions.x0 = obj.x0 / obj.stateScaling;
+                    obj.boundaryConditions.xF = obj.xF / obj.stateScaling;
                 case 'control'
                     validateattributes(factors, {'numeric'}, {'vector', 'positive', 'numel', obj.nu});
                     obj.controlScaling = factors(:);
@@ -181,6 +188,8 @@ classdef TrajectoryProblem < handle
                     validateattributes(factors, {'numeric'}, {'scalar', 'positive'});
                     obj.timeScaling = factors;
                     obj.scaling.timeScaling = factors;
+                    obj.boundaryConditions.t0 = obj.t0 / obj.timeScaling;
+                    obj.boundaryConditions.tF = obj.tF / obj.timeScaling;
                 otherwise
                     error('Invalid scaling type. Must be ''state'', ''control'', or ''time''');
             end

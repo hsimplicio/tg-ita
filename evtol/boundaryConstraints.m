@@ -46,6 +46,10 @@ function [c, ceq] = boundaryConstraints(x0, xF, t0, tF, boundaryConditions)
         finalPosY - boundaryConditions.xF(2);  % y(T) = boundaryConditions.xF(2)
         finalVelX - boundaryConditions.xF(3);  % vx(T) = boundaryConditions.xF(3)
         finalVelY - boundaryConditions.xF(4);  % vy(T) = boundaryConditions.xF(4)
+
+        % Time bounds
+        t0 - boundaryConditions.t0;
+        tF - boundaryConditions.tF;
     ];
     
     % No inequality constraints

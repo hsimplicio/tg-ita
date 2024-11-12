@@ -11,6 +11,7 @@ problem = TrajectoryProblem(5, 2);  % 5 states, 2 controls
 t0 = 0;
 tF = 45;
 problem.setTimeBounds(t0, tF);
+problem.setTimeBoundaries(t0, t0, tF, tF);
 
 %% Set state bounds
 xLow = [0; -10; 0; -5; 0];
@@ -21,6 +22,11 @@ problem.setStateBounds(xLow, xUpp);
 uLow = [0; 0];
 uUpp = [1800; 2600];
 problem.setControlBounds(uLow, uUpp);
+
+%% Set scaling
+problem.setScaling('time', tF - t0);
+problem.setScaling('state', xUpp - xLow);
+problem.setScaling('control', uUpp - uLow);
 
 %% Set parameters
 problem.setParameters(evtolParams());
@@ -49,8 +55,16 @@ nGrid = [50, 80, 150, 190, 250];
 options = optimoptions('fmincon');
 options.Display = 'iter';
 options.MaxFunEvals = 1e5;
-options.EnableFeasibilityMode = true;
-options.SubproblemAlgorithm = 'cg';
+% options.Algorithm = 'sqp';
+% options.EnableFeasibilityMode = true;
+% options.SubproblemAlgorithm = 'cg';
+options.FiniteDifferenceType = 'central';  % More accurate gradients
+options.FiniteDifferenceStepSize = 1e-6;   % Smaller step size
+options.OptimalityTolerance = 1e-6;        % Tighter tolerance
+options.ConstraintTolerance = 1e-6;        % Tighter tolerance
+options.StepTolerance = 1e-10;             % Smaller steps
+options.MaxIterations = 1000;              % Increase if needed
+
 problem.setSolverOptions(options, nGrid);
 
 % Optional: Set constraint checking function

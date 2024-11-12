@@ -15,6 +15,11 @@ function vi = computeInducedVelocity(vh, V, alpha)
         alpha double
     end
     
+    % Input validation
+    assert(all(isfinite(vh)), 'Non-finite hover velocity');
+    assert(all(isfinite(V)), 'Non-finite velocity');
+    assert(all(isfinite(alpha)), 'Non-finite angle');
+    
     % For hover (V=0), vi should equal vh
     hover_condition = (V < 1e-6);
 

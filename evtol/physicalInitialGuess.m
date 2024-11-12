@@ -24,6 +24,10 @@ function zGuess = physicalInitialGuess(problem, plotFlag)
     velX = gradient(posX, time);  % Note: gradient still uses original time step
     velY = gradient(posY, time);
     
+    % Add validation
+    assert(all(isfinite(velX)), 'Non-finite values in velX');
+    assert(all(isfinite(velY)), 'Non-finite values in velY');
+    
     % Calculate minimum thrust needed to maintain trajectory
     [lift, drag] = computeLiftDrag(velX, velY, params);
     gamma = computeFlightAngle(velX, velY);

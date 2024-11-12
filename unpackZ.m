@@ -33,7 +33,7 @@ function [time, state, control] = unpackZ(z, packInfo, scalingFlag)
     state = reshape(z_rest(1:nStates), [nx, nGrid]);
     control = reshape(z_rest(nStates+1:end), [nu, nGrid]);
     
-    % Apply scaling if requested
+    % Apply scaling up if requested
     if nargin >= 3 && scalingFlag
         tSpan = tSpan * packInfo.scaling.timeScaling;
         state = state .* repmat(packInfo.scaling.stateScaling, 1, nGrid);

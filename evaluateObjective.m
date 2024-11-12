@@ -1,27 +1,35 @@
-function J = evaluateObjective(time, state, control, boundaryObjective, pathObjective)
+function J = evaluateObjective(z, packInfo, boundaryObjective, pathObjective)
     % Evaluate the combined objective function
     % Inputs:
-    %   time: [1,n] = time vector
-    %   state: [nx,n] = state variables
-    %   control: [nu,n] = control variables
+    %   z: [nz,1] = decision variables
+    %   packInfo: struct = information about the problem
     %   boundaryObjective: function = Mayer term (φ)
     %   pathObjective: function = Lagrange term (L)
     %
     % Outputs:
     %   J = scalar = objective value
     
+    % Unpack z
+    [time, state, control] = unpackZ(z, packInfo);
+
     % Initialize objective
     J = 0;
     
     % Add Mayer term if provided
     if ~isempty(boundaryObjective)
-        J = J + boundaryObjective(state(:,1), state(:,end), time(1), time(end));
+        phi = boundaryObjective(state(:,1), state(:,end), time(1), time(end));
+        J = J + phi;
+        % disp('Mayer term:');
+        % disp(phi);
     end
     
     % Add Lagrange term if provided
     if ~isempty(pathObjective)
         % Trapezoidal integration of the path objective
         integrand = pathObjective(time, state, control);
-        J = J + trapz(time, integrand);
+        L = trapz(time, integrand);
+        J = J + L;
+        % disp('Lagrange term:');
+        % disp(L);
     end
 end 

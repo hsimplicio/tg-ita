@@ -1,9 +1,8 @@
-function [c, ceq] = evaluateConstraints(time, state, control, dynamics, defectConstraints, pathConstraints, boundaryConstraints)
+function [c, ceq] = evaluateConstraints(z, packInfo, dynamics, defectConstraints, pathConstraints, boundaryConstraints)
     % Define the collocation constraints
     % Inputs:
-    %   time: [1,n] = time vector
-    %   state: [5,n] = state variables
-    %   control: [2,n] = control variables
+    %   z: [nz,1] = decision variables
+    %   packInfo: struct = information about the problem
     %   dynamics: function = dynamics function
     %   defectConstraints: function = defect constraints function
     %   pathConstraints: function = path constraints function
@@ -12,15 +11,29 @@ function [c, ceq] = evaluateConstraints(time, state, control, dynamics, defectCo
     %   c = [m,1] = inequality constraints
     %   ceq = [m,1] = equality constraints
 
+    % Check for NaN values in z
+    if any(isnan(z))
+        error('NaN values detected in decision variables');
+    end
+    
+    % Unpack z
+    [time, state, control] = unpackZ(z, packInfo);
+    [physicalTime, physicalState, physicalControl] = unpackZ(z, packInfo, true);
 
     % Initialize inequality and equality constraints
-    c = [];
+    c = [
+        time(1) - time(end)  % t0 <= tf
+    ];
     ceq = [];
 
     % Evaluate defects constraints
     if ~isempty(defectConstraints)
-        timeStep = (time(end) - time(1)) / (length(time) - 1);
-        derivatives = dynamics(time, state, control);
+        % Evaluate derivatives
+        derivatives = dynamics(physicalTime, physicalState, physicalControl);
+        % Scale derivatives
+        derivatives = derivatives ./ packInfo.scaling.stateScaling * packInfo.scaling.timeScaling;
+        % Evaluate defects
+        timeStep = (time(end) - time(1)) / packInfo.nGrid;
         defects = defectConstraints(timeStep, state, derivatives);
         ceq = [ceq; defects(:)];
     end

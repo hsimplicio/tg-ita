@@ -9,7 +9,13 @@ classdef TrajectoryProblem < handle
         % Time properties
         t0 {mustBeNumeric}  % Initial time
         tF {mustBeNumeric}  % Final time
-        timeGrid = {}  % Cell array of time grids
+        timeSpan = {}  % Cell array of time spans
+
+        % Time bounds
+        t0Low {mustBeNumeric}  % Lower bound for initial time
+        t0Upp {mustBeNumeric}  % Upper bound for initial time
+        tFLow {mustBeNumeric}  % Lower bound for final time
+        tFUpp {mustBeNumeric}  % Upper bound for final time
         
         % Boundary conditions
         x0  % Initial state
@@ -47,6 +53,7 @@ classdef TrajectoryProblem < handle
         stateScaling
         controlScaling
         timeScaling
+        scaling % Struct containing stateScaling, controlScaling, and timeScaling
     end
     
     properties
@@ -69,19 +76,36 @@ classdef TrajectoryProblem < handle
             % Initialize with empty arrays
             obj.x0 = zeros(nx, 1);
             obj.xF = zeros(nx, 1);
-            obj.xLow = -inf(nx, 1);
-            obj.xUpp = inf(nx, 1);
-            obj.uLow = -inf(nu, 1);
-            obj.uUpp = inf(nu, 1);
+            obj.xLow = -1e8*ones(nx, 1);
+            obj.xUpp = 1e8*ones(nx, 1);
+            obj.uLow = -1e8*ones(nu, 1);
+            obj.uUpp = 1e8*ones(nu, 1);
+
+            obj.boundaryConditions = struct();
             
             % Default time interval
             obj.t0 = 0;
             obj.tF = 1;
-            
+            obj.timeSpan{1} = [obj.t0, obj.tF];
+
+            obj.t0Low = 0;
+            obj.t0Upp = 0;
+            obj.tFLow = 1;
+            obj.tFUpp = 1;
+
             % Initialize scaling factors to 1
             obj.stateScaling = ones(nx, 1);
             obj.controlScaling = ones(nu, 1);
             obj.timeScaling = 1;
+            obj.scaling = struct('stateScaling', obj.stateScaling, ...
+                                 'controlScaling', obj.controlScaling, ...
+                                 'timeScaling', obj.timeScaling);
+
+            % Initialize time bounds
+            obj.t0Low = -1e8;
+            obj.t0Upp = 1e8;
+            obj.tFLow = -1e8;
+            obj.tFUpp = 1e8;
         end
         
         function setTimeBounds(obj, t0, tF)
@@ -90,6 +114,9 @@ classdef TrajectoryProblem < handle
             validateattributes(tF, {'numeric'}, {'scalar', '>', t0});
             obj.t0 = t0;
             obj.tF = tF;
+            obj.timeSpan{1} = [obj.t0, obj.tF];
+            obj.boundaryConditions.t0 = t0;
+            obj.boundaryConditions.tF = tF;
         end
         
         function setBoundaryConditions(obj, x0, xF)
@@ -98,7 +125,8 @@ classdef TrajectoryProblem < handle
             validateattributes(xF, {'numeric'}, {'vector', 'numel', obj.nx});
             obj.x0 = x0(:);  % Ensure column vector
             obj.xF = xF(:);
-            obj.boundaryConditions = struct('x0', x0, 'xF', xF);
+            obj.boundaryConditions.x0 = x0;
+            obj.boundaryConditions.xF = xF;
         end
         
         function setStateBounds(obj, xLow, xUpp)
@@ -122,16 +150,16 @@ classdef TrajectoryProblem < handle
         function setDynamics(obj, hDynamics)
             % Set dynamics function
             validateattributes(hDynamics, {'function_handle'}, {});
-            % Test the function with dummy inputs
-            time_test = zeros(1,1);
-            x_test = zeros(obj.nx, 1);
-            u_test = zeros(obj.nu, 1);
-            try
-                dx = hDynamics(time_test, x_test, u_test, obj.parameters);
-                validateattributes(dx, {'numeric'}, {'vector', 'numel', obj.nx});
-            catch ME
-                error('Invalid dynamics function: %s', ME.message);
-            end
+            % % Test the function with dummy inputs
+            % time_test = zeros(1,1);
+            % x_test = zeros(obj.nx, 1);
+            % u_test = zeros(obj.nu, 1);
+            % try
+            %     dx = hDynamics(time_test, x_test, u_test, obj.parameters);
+            %     validateattributes(dx, {'numeric'}, {'vector', 'numel', obj.nx});
+            % catch ME
+            %     error('Invalid dynamics function: %s', ME.message);
+            % end
             obj.dynamics = @(time, state, control) hDynamics(time, state, control, obj.parameters);
         end
         
@@ -169,8 +197,8 @@ classdef TrajectoryProblem < handle
             end
             
             % Create combined objective function
-            obj.objective = @(time, state, control) evaluateObjective(...
-                time, state, control, ...
+            obj.objective = @(z, packInfo) evaluateObjective(...
+                z, packInfo, ...
                 obj.boundaryObjective, ...
                 obj.pathObjective);
         end
@@ -193,7 +221,22 @@ classdef TrajectoryProblem < handle
                 catch ME
                     error('Invalid boundary constraints function: %s', ME.message);
                 end
-                obj.boundaryConstraints = @(x0, xF, t0, tF) hBoundaryConstraints(x0, xF, t0, tF, obj.boundaryConditions);
+
+                % Scale boundary conditions
+                bndConditions = struct();
+                if isfield(obj.boundaryConditions, 't0')
+                    bndConditions.t0 = obj.boundaryConditions.t0 / obj.timeScaling;
+                end
+                if isfield(obj.boundaryConditions, 'tF')
+                    bndConditions.tF = obj.boundaryConditions.tF / obj.timeScaling;
+                end
+                if isfield(obj.boundaryConditions, 'x0')
+                    bndConditions.x0 = obj.boundaryConditions.x0;
+                end
+                if isfield(obj.boundaryConditions, 'xF')
+                    bndConditions.xF = obj.boundaryConditions.xF;
+                end
+                obj.boundaryConstraints = @(x0, xF, t0, tF) hBoundaryConstraints(x0, xF, t0, tF, bndConditions);
             else
                 obj.boundaryConstraints = [];
             end
@@ -219,8 +262,8 @@ classdef TrajectoryProblem < handle
             end
             
             % Create combined constraints function
-            obj.constraints = @(time, state, control) evaluateConstraints(...
-                time, state, control, ...
+            obj.constraints = @(z, packInfo) evaluateConstraints(...
+                z, packInfo, ...
                 obj.dynamics, ...
                 @computeDefects, ...
                 obj.pathConstraints, ...
@@ -335,27 +378,41 @@ classdef TrajectoryProblem < handle
             end
         end
         
-        function guess = generateInitialGuess(obj)
-            % Generate linear interpolation between boundary conditions if no guess provided
+        function [state, control] = generateInitialGuess(obj)
+            % Generate initial guess with reasonable values for free final states
             
             % Validate boundary conditions exist
             if isempty(obj.x0) || isempty(obj.xF)
                 error('TrajectoryProblem:NoBoundaryConditions', ...
                     'Either pass initial guess or set boundary conditions to generate a linear interpolation initial guess.');
             end
+
+            timeGrid = linspace(obj.t0, obj.tF, obj.nGrid(1));
             
-            % Linear interpolation for states
-            x_guess = interp1([obj.t0, obj.tF]', [obj.x0, obj.xF]', obj.timeGrid{1}')';
+            % Initialize state array
+            state = zeros(obj.nx, obj.nGrid(1));
             
-            % Initialize controls to maintain hover
-            % This is a simple initialization - might need to be customized for different problems
-            u_guess = zeros(obj.nu, obj.nGrid(1));
+            % For each state variable
+            for i = 1:obj.nx
+                if abs(obj.xF(i)) > 1e6  % Detect "free" final states
+                    % Use a reasonable final value instead of the large number
+                    if obj.xF(i) > 0
+                        finalVal = max(obj.x0(i), obj.xUpp(i)/2);  % Use half of upper bound
+                    else
+                        finalVal = min(obj.x0(i), obj.xLow(i)/2);  % Use half of lower bound
+                    end
+                    state(i,:) = interp1([obj.t0, obj.tF], [obj.x0(i), finalVal], timeGrid);
+                else
+                    % Normal linear interpolation for fixed final states
+                    state(i,:) = interp1([obj.t0, obj.tF], [obj.x0(i), obj.xF(i)], timeGrid);
+                end
+            end
             
-            % Combine state and control guesses
-            guess = [x_guess; u_guess];
+            % Initialize controls to zeros
+            control = zeros(obj.nu, obj.nGrid(1));
         end
         
-        function solution = solveWithTrapezoidalCollocation(obj, zGuess)
+        function solution = solveWithTrapezoidalCollocation(obj, guess)
             % Solve the trajectory optimization problem with trapezoidal collocation
             if ~obj.validate()
                 error('TrajectoryProblem:InvalidProblem', ...
@@ -363,66 +420,89 @@ classdef TrajectoryProblem < handle
             end
             
             nIter = length(obj.nGrid);
-
-            for i = 1:nIter
-                obj.timeGrid{i} = linspace(obj.t0, obj.tF, obj.nGrid(i));
-            end
             solution(nIter) = struct();
             
             for i = 1:nIter
                 disp(['Iteration ', num2str(i), ' of ', num2str(nIter)]);
-                
+
                 % Generate or interpolate initial guess
                 if i == 1
-                    if nargin < 2 || isempty(zGuess)
-                        zGuess = obj.generateInitialGuess();
+                    timeGrid = linspace(obj.t0, obj.tF, obj.nGrid(1));
+                    if nargin < 2 || isempty(guess)
+                        [stateGuess, controlGuess] = obj.generateInitialGuess();
+                        [zGuess, packInfo] = packZ([obj.t0, obj.tF], stateGuess, controlGuess, obj.scaling);
+                    else
+                        [zGuess, packInfo] = packZ([obj.t0, obj.tF], guess(1:obj.nx,:), guess(obj.nx+1:end,:), obj.scaling);
                     end
                 else
-                    zGuess = [solution(i-1).z.state; solution(i-1).z.control];
-                    zGuess = interp1(obj.timeGrid{i-1}, zGuess', obj.timeGrid{i})';
+                    % Validate time span
+                    assert(all(isfinite(obj.timeSpan{i-1})), 'Non-finite values in previous time span');
+                    assert(all(isfinite(obj.timeSpan{i})), 'Non-finite values in current time span');
+                    assert(obj.timeSpan{i-1}(2) >= obj.timeSpan{i-1}(1), 'Invalid previous time span');
+                    assert(obj.timeSpan{i}(2) >= obj.timeSpan{i}(1), 'Invalid current time span');
+
+                    timeGrid = linspace(obj.timeSpan{i}(1), obj.timeSpan{i}(2), obj.nGrid(i));
+                    timeOld = linspace(obj.timeSpan{i-1}(1), obj.timeSpan{i-1}(2), obj.nGrid(i-1));
+                    
+                    % Validate previous solution
+                    assert(all(isfinite(solution(i-1).z.state(:))), 'Non-finite values in previous state');
+                    assert(all(isfinite(solution(i-1).z.control(:))), 'Non-finite values in previous control');
+                    
+                    % Perform interpolation with validation
+                    stateGuess = zeros(obj.nx, obj.nGrid(i));
+                    controlGuess = zeros(obj.nu, obj.nGrid(i));
+                    
+                    % Interpolate each state and control separately to maintain dimensions
+                    for j = 1:obj.nx
+                        stateGuess(j,:) = interp1(timeOld, solution(i-1).z.state(j,:), timeGrid, 'spline');
+                    end
+                    for j = 1:obj.nu
+                        controlGuess(j,:) = interp1(timeOld, solution(i-1).z.control(j,:), timeGrid, 'linear', 'extrap');
+                    end
+                    
+                    % Validate interpolation results
+                    assert(all(isfinite(stateGuess(:))), 'Non-finite values in interpolated state');
+                    assert(all(isfinite(controlGuess(:))), 'Non-finite values in interpolated control');
+                    
+                    % Pack with validation
+                    [zGuess, packInfo] = packZ(obj.timeSpan{i}, stateGuess, controlGuess, obj.scaling);
+                    assert(all(isfinite(zGuess)), 'Non-finite values in packed guess');
                 end
                 
                 % Set up the problem
-                % fun = @(z)( obj.objective(obj.timeGrid{i}, z(1:obj.nx,:), z(obj.nx+1:end,:)) );
+                fun = @(z)( obj.objective(z, packInfo) );
                 A = []; b = []; Aeq = []; beq = [];
-                lb = repmat([obj.xLow; obj.uLow], 1, obj.nGrid(i));
-                ub = repmat([obj.xUpp; obj.uUpp], 1, obj.nGrid(i));
-                % nonlcon = @(z)( obj.constraints(obj.timeGrid{i}, z(1:obj.nx,:), z(obj.nx+1:end,:)) );
-                
-                % Scale the problem
-                scaledLb = lb ./ [repmat(obj.stateScaling, 1, obj.nGrid(i)); 
-                                 repmat(obj.controlScaling, 1, obj.nGrid(i))];
-                scaledUb = ub ./ [repmat(obj.stateScaling, 1, obj.nGrid(i)); 
-                                 repmat(obj.controlScaling, 1, obj.nGrid(i))];
-                
-                if ~isempty(zGuess)
-                    scaledGuess = zGuess ./ [repmat(obj.stateScaling, 1, obj.nGrid(i)); 
-                                            repmat(obj.controlScaling, 1, obj.nGrid(i))];
-                end
-                
-                % Modified objective and constraint functions to handle scaling
-                scaledFun = @(z)( obj.objective(obj.timeGrid{i} / obj.timeScaling, ...
-                    z(1:obj.nx,:) ./ obj.stateScaling, ...
-                    z(obj.nx+1:end,:) ./ obj.controlScaling) );
-                
-                scaledNonlcon = @(z)( obj.constraints(obj.timeGrid{i} / obj.timeScaling, ...
-                    z(1:obj.nx,:) ./ obj.stateScaling, ...
-                    z(obj.nx+1:end,:) ./ obj.controlScaling) );
-                
+                lb = [
+                    obj.t0Low / obj.scaling.timeScaling;
+                    obj.tFLow / obj.scaling.timeScaling;
+                    reshape(repmat(obj.xLow ./ obj.scaling.stateScaling, 1, obj.nGrid(i)), [], 1);
+                    reshape(repmat(obj.uLow ./ obj.scaling.controlScaling, 1, obj.nGrid(i)), [], 1)
+                ];
+                ub = [
+                    obj.t0Upp / obj.scaling.timeScaling;
+                    obj.tFUpp / obj.scaling.timeScaling;
+                    reshape(repmat(obj.xUpp ./ obj.scaling.stateScaling, 1, obj.nGrid(i)), [], 1);
+                    reshape(repmat(obj.uUpp ./ obj.scaling.controlScaling, 1, obj.nGrid(i)), [], 1)
+                ];
+                nonlcon = @(z)( obj.constraints(z, packInfo) );
+
                 % Solve scaled problem
-                [z_scaled, fval, exitflag, output] = fmincon(scaledFun, scaledGuess, ...
-                    A, b, Aeq, beq, scaledLb, scaledUb, scaledNonlcon, obj.solverOptions{i});
-                
-                % Unscale solution
-                z = z_scaled .* [repmat(obj.stateScaling, 1, obj.nGrid(i)); 
-                                repmat(obj.controlScaling, 1, obj.nGrid(i))];
+                [z_scaled, fval, exitflag, output] = fmincon(fun, zGuess, ...
+                    A, b, Aeq, beq, lb, ub, nonlcon, obj.solverOptions{i});
+
+                % Unpack solution
+                [time, state, control] = unpackZ(z_scaled, packInfo, true);
+
+                % Set time span for next iteration
+                obj.timeSpan{i+1} = [time(1), time(end)];
                 
                 solution(i).nGrid = obj.nGrid(i);
                 solution(i).z = struct();
-                solution(i).z.time = obj.timeGrid{i};
-                solution(i).z.state = z(1:obj.nx,:);
-                solution(i).z.control = z(obj.nx+1:end,:);
-                solution(i).z.derivatives = obj.dynamics(obj.timeGrid{i}, solution(i).z.state, solution(i).z.control);
+                solution(i).z.timeSpan = obj.timeSpan{i+1};
+                solution(i).z.time = timeGrid;
+                solution(i).z.state = state;
+                solution(i).z.control = control;
+                solution(i).z.derivatives = obj.dynamics(timeGrid, state, control);
                 solution(i).fval = fval;
                 solution(i).exitflag = exitflag;
                 solution(i).output = output;
@@ -430,7 +510,7 @@ classdef TrajectoryProblem < handle
                 % Check constraints if a check function is provided
                 if ~isempty(obj.constraintsCheck)
                     solution(i).violations = obj.constraintsCheck(...
-                        obj.timeGrid{i}, ...
+                        timeGrid, ...
                         solution(i).z.state, ...
                         solution(i).z.control, ...
                         obj.parameters);
@@ -469,18 +549,37 @@ classdef TrajectoryProblem < handle
                 case 'state'
                     validateattributes(factors, {'numeric'}, {'vector', 'positive', 'numel', obj.nx});
                     obj.stateScaling = factors(:);
+                    obj.scaling.stateScaling = factors(:);
                     
                 case 'control'
                     validateattributes(factors, {'numeric'}, {'vector', 'positive', 'numel', obj.nu});
                     obj.controlScaling = factors(:);
-                    
+                    obj.scaling.controlScaling = factors(:);
                 case 'time'
                     validateattributes(factors, {'numeric'}, {'scalar', 'positive'});
                     obj.timeScaling = factors;
-                    
+                    obj.scaling.timeScaling = factors;
                 otherwise
                     error('Invalid scaling type. Must be ''state'', ''control'', or ''time''');
             end
+        end
+
+        function setTimeBoundaries(obj, t0Low, t0Upp, tFLow, tFUpp)
+            % Set bounds for initial and final times
+            
+            validateattributes(t0Low, {'numeric'}, {'scalar'});
+            validateattributes(t0Upp, {'numeric'}, {'scalar'});
+            validateattributes(tFLow, {'numeric'}, {'scalar'});
+            validateattributes(tFUpp, {'numeric'}, {'scalar'});
+            
+            assert(t0Low <= t0Upp, 'Lower bound for t0 must be <= upper bound');
+            assert(tFLow <= tFUpp, 'Lower bound for tF must be <= upper bound');
+            assert(t0Upp <= tFLow, 'Upper bound for t0 must be <= lower bound for tF');
+            
+            obj.t0Low = t0Low;
+            obj.t0Upp = t0Upp;
+            obj.tFLow = tFLow;
+            obj.tFUpp = tFUpp;
         end
     end
 end

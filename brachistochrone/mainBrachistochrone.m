@@ -10,14 +10,20 @@ nu = 1;  % Control: [theta] (angle of the path)
 problem = TrajectoryProblem(nx, nu);
 
 %% Set time bounds
+t0Low = 0;
+t0Upp = 0;
+tFLow = 0;
+tFUpp = 1;
+problem.setTimeBounds(t0Low, t0Upp, tFLow, tFUpp);
+
+%% Set time boundary conditions
 t0 = 0;
-tF = 2;  % Initial guess for final time (will be optimized)
-problem.setTimeBounds(t0, tF);
-problem.setTimeBoundaries(t0, t0, t0, tF); % t0Low, t0Upp, tFLow, tFUpp
+tF = 1;  % Initial guess for final time (will be optimized)
+problem.setTimeBoundaryConditions(t0, tF);
 
 %% Set state bounds
-xLow = [-1; -10; 0];     % Lower bounds: x≥-1, y≥-10, v≥0
-xUpp = [10; 1; 20];      % Upper bounds: x≤10, y≤1, v≤20
+xLow = [0; -5; 0];     % Lower bounds: x≥-1, y≥-10, v≥0
+xUpp = [5; 0; 15];      % Upper bounds: x≤10, y≤1, v≤20
 problem.setStateBounds(xLow, xUpp);
 
 %% Set control bounds
@@ -31,17 +37,21 @@ problem.setParameters(params);
 
 %% Set boundary conditions
 x0 = [0; 0; 0];        % Start at origin with zero velocity
-xF = [5; -5; xUpp(3)]; % End at (5,-5) with free final velocity up to vMax
+xF = [5; -5; xUpp(3)-1]; % End at (5,-5) with free final velocity up to vMax
 problem.setBoundaryConditions(x0, xF);
 
 %% Set scaling
-xScale = abs(xF);      % Position and velocity scales
-uScale = pi/2;         % Angle scale
-tScale = sqrt(2*abs(xF(2))/params.GRAVITY);   % Natural time scale
+% xScale = [
+%     max(abs(xF(1)), 1);  % Position x scale
+%     max(abs(xF(2)), 1);  % Position y scale
+%     sqrt(2*params.GRAVITY*abs(xF(2)))  % Natural velocity scale
+% ];
+% uScale = 1;         % Angle scale
+% tScale = sqrt(2*abs(xF(2))/params.GRAVITY);   % Natural time scale
 
-problem.setScaling('state', xScale);    % Scale states to be O(1)
-problem.setScaling('control', uScale);  % Scale control to be O(1)
-problem.setScaling('time', tScale);     % Scale time to be O(1)
+% problem.setScaling('state', xScale);    % Scale states to be O(1)
+% problem.setScaling('control', uScale);  % Scale control to be O(1)
+% problem.setScaling('time', tScale);     % Scale time to be O(1)
 
 %% Set functions
 problem.setDynamics(@brachistochroneDynamics);
@@ -49,19 +59,21 @@ problem.setObjective(@boundaryObjective, @pathObjective);
 problem.setConstraints(@boundaryConstraints, @pathConstraints);
 
 %% Set solver options
-nGrid = [10, 15, 20, 30, 40];  % Number of grid points for each iteration
+nGrid = [5, 10, 15, 20];  % Number of grid points for each iteration
 options = optimoptions('fmincon');
 options.Display = 'iter';
 options.MaxFunEvals = 1e5;
-options.Algorithm = 'sqp';
+% options.Algorithm = 'sqp';
 options.EnableFeasibilityMode = true;
 options.SubproblemAlgorithm = 'cg';
 options.FiniteDifferenceType = 'central';  % More accurate gradients
 % options.FiniteDifferenceStepSize = 1e-6;   % Smaller step size
-options.OptimalityTolerance = 1e-6;        % Tighter tolerance
-options.ConstraintTolerance = 1e-6;        % Tighter tolerance
+% options.OptimalityTolerance = 1e-6;        % Tighter tolerance
+% options.ConstraintTolerance = 1e-6;        % Tighter tolerance
 % options.StepTolerance = 1e-10;             % Smaller steps
 options.MaxIterations = 2000;              % Increase if needed
+options.ScaleProblem = 'obj-and-constr';  % Add scaling
+options.HessianApproximation = 'bfgs';    % Use BFGS approximation
 
 problem.setSolverOptions(options, nGrid);
 
@@ -79,7 +91,6 @@ solution = problem.solveWithTrapezoidalCollocation(zGuess);
 disp('=== Solution Analysis ===');
 disp('Time span:');
 disp(solution(end).z.timeSpan);
-disp([solution(end).z.time(1), solution(end).z.time(end)]);
 
 disp('Initial state:');
 disp(solution(end).z.state(:,1));

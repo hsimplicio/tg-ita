@@ -80,26 +80,24 @@ classdef TrajectoryProblem < handle
             obj.xUpp = 1e8*ones(nx, 1);
             obj.uLow = -1e8*ones(nu, 1);
             obj.uUpp = 1e8*ones(nu, 1);
-
-            obj.boundaryConditions = struct();
             
             % Default time interval
             obj.t0 = 0;
             obj.tF = 1;
             obj.timeSpan{1} = [obj.t0, obj.tF];
-
-            obj.t0Low = 0;
-            obj.t0Upp = 0;
-            obj.tFLow = 1;
-            obj.tFUpp = 1;
-
+            
             % Initialize scaling factors to 1
             obj.stateScaling = ones(nx, 1);
             obj.controlScaling = ones(nu, 1);
             obj.timeScaling = 1;
             obj.scaling = struct('stateScaling', obj.stateScaling, ...
-                                 'controlScaling', obj.controlScaling, ...
-                                 'timeScaling', obj.timeScaling);
+                'controlScaling', obj.controlScaling, ...
+                    'timeScaling', obj.timeScaling);
+                    
+            % Initialize boundary conditions struct
+            obj.boundaryConditions = struct();
+            obj.boundaryConditions.t0 = obj.t0 / obj.timeScaling;
+            obj.boundaryConditions.tF = obj.tF / obj.timeScaling;
 
             % Initialize time bounds
             obj.t0Low = -1e8;
@@ -107,18 +105,7 @@ classdef TrajectoryProblem < handle
             obj.tFLow = -1e8;
             obj.tFUpp = 1e8;
         end
-        
-        function setTimeBounds(obj, t0, tF)
-            % Set time bounds
-            validateattributes(t0, {'numeric'}, {'scalar'});
-            validateattributes(tF, {'numeric'}, {'scalar', '>', t0});
-            obj.t0 = t0;
-            obj.tF = tF;
-            obj.timeSpan{1} = [obj.t0, obj.tF];
-            obj.boundaryConditions.t0 = t0;
-            obj.boundaryConditions.tF = tF;
-        end
-        
+
         function setBoundaryConditions(obj, x0, xF)
             % Set boundary conditions
             validateattributes(x0, {'numeric'}, {'vector', 'numel', obj.nx});
@@ -129,6 +116,34 @@ classdef TrajectoryProblem < handle
             obj.boundaryConditions.xF = xF;
         end
         
+        function setTimeBoundaryConditions(obj, t0, tF)
+            % Set time bounds
+            validateattributes(t0, {'numeric'}, {'scalar'});
+            validateattributes(tF, {'numeric'}, {'scalar', '>', t0});
+            obj.t0 = t0;
+            obj.tF = tF;
+            obj.timeSpan{1} = [obj.t0, obj.tF];
+            obj.boundaryConditions.t0 = t0;
+            obj.boundaryConditions.tF = tF;
+        end
+
+        function setTimeBounds(obj, t0Low, t0Upp, tFLow, tFUpp)
+            % Set bounds for initial and final times
+            validateattributes(t0Low, {'numeric'}, {'scalar'});
+            validateattributes(t0Upp, {'numeric'}, {'scalar'});
+            validateattributes(tFLow, {'numeric'}, {'scalar'});
+            validateattributes(tFUpp, {'numeric'}, {'scalar'});
+            
+            assert(t0Low <= t0Upp, 'Lower bound for t0 must be <= upper bound');
+            assert(tFLow <= tFUpp, 'Lower bound for tF must be <= upper bound');
+            assert(t0Upp <= tFLow, 'Upper bound for t0 must be <= lower bound for tF');
+            
+            obj.t0Low = t0Low;
+            obj.t0Upp = t0Upp;
+            obj.tFLow = tFLow;
+            obj.tFUpp = tFUpp;
+        end
+        
         function setStateBounds(obj, xLow, xUpp)
             % Set state bounds
             validateattributes(xLow, {'numeric'}, {'vector', 'numel', obj.nx});
@@ -137,7 +152,7 @@ classdef TrajectoryProblem < handle
             obj.xLow = xLow(:);
             obj.xUpp = xUpp(:);
         end
-        
+
         function setControlBounds(obj, uLow, uUpp)
             % Set control bounds
             validateattributes(uLow, {'numeric'}, {'vector', 'numel', obj.nu});
@@ -145,6 +160,30 @@ classdef TrajectoryProblem < handle
             assert(all(uLow <= uUpp), 'Lower bounds must be <= upper bounds');
             obj.uLow = uLow(:);
             obj.uUpp = uUpp(:);
+        end
+
+        function setScaling(obj, type, factors)
+            % Set scaling factors for variables
+            % type: 'state', 'control', or 'time'
+            % factors: vector of scaling factors
+            
+            switch lower(type)
+                case 'state'
+                    validateattributes(factors, {'numeric'}, {'vector', 'positive', 'numel', obj.nx});
+                    obj.stateScaling = factors(:);
+                    obj.scaling.stateScaling = factors(:);
+                    
+                case 'control'
+                    validateattributes(factors, {'numeric'}, {'vector', 'positive', 'numel', obj.nu});
+                    obj.controlScaling = factors(:);
+                    obj.scaling.controlScaling = factors(:);
+                case 'time'
+                    validateattributes(factors, {'numeric'}, {'scalar', 'positive'});
+                    obj.timeScaling = factors;
+                    obj.scaling.timeScaling = factors;
+                otherwise
+                    error('Invalid scaling type. Must be ''state'', ''control'', or ''time''');
+            end
         end
         
         function setDynamics(obj, hDynamics)
@@ -490,7 +529,7 @@ classdef TrajectoryProblem < handle
                 [z_scaled, fval, exitflag, output] = fmincon(fun, zGuess, ...
                     A, b, Aeq, beq, lb, ub, nonlcon, obj.solverOptions{i});
 
-                % Unpack solution
+                % Unpack solution with scaling up
                 [time, state, control] = unpackZ(z_scaled, packInfo, true);
 
                 % Set time span for next iteration
@@ -538,48 +577,6 @@ classdef TrajectoryProblem < handle
         function nGrid = getGridSize(obj)
             % Get grid size
             nGrid = obj.nGrid;
-        end
-
-        function setScaling(obj, type, factors)
-            % Set scaling factors for variables
-            % type: 'state', 'control', or 'time'
-            % factors: vector of scaling factors
-            
-            switch lower(type)
-                case 'state'
-                    validateattributes(factors, {'numeric'}, {'vector', 'positive', 'numel', obj.nx});
-                    obj.stateScaling = factors(:);
-                    obj.scaling.stateScaling = factors(:);
-                    
-                case 'control'
-                    validateattributes(factors, {'numeric'}, {'vector', 'positive', 'numel', obj.nu});
-                    obj.controlScaling = factors(:);
-                    obj.scaling.controlScaling = factors(:);
-                case 'time'
-                    validateattributes(factors, {'numeric'}, {'scalar', 'positive'});
-                    obj.timeScaling = factors;
-                    obj.scaling.timeScaling = factors;
-                otherwise
-                    error('Invalid scaling type. Must be ''state'', ''control'', or ''time''');
-            end
-        end
-
-        function setTimeBoundaries(obj, t0Low, t0Upp, tFLow, tFUpp)
-            % Set bounds for initial and final times
-            
-            validateattributes(t0Low, {'numeric'}, {'scalar'});
-            validateattributes(t0Upp, {'numeric'}, {'scalar'});
-            validateattributes(tFLow, {'numeric'}, {'scalar'});
-            validateattributes(tFUpp, {'numeric'}, {'scalar'});
-            
-            assert(t0Low <= t0Upp, 'Lower bound for t0 must be <= upper bound');
-            assert(tFLow <= tFUpp, 'Lower bound for tF must be <= upper bound');
-            assert(t0Upp <= tFLow, 'Upper bound for t0 must be <= lower bound for tF');
-            
-            obj.t0Low = t0Low;
-            obj.t0Upp = t0Upp;
-            obj.tFLow = tFLow;
-            obj.tFUpp = tFUpp;
         end
     end
 end

@@ -8,10 +8,16 @@ addpath('..');
 problem = TrajectoryProblem(5, 2);  % 5 states, 2 controls
 
 %% Set time bounds
+t0Low = 0;
+t0Upp = 0;
+tFLow = 0;
+tFUpp = 45;
+problem.setTimeBounds(t0Low, t0Upp, tFLow, tFUpp);
+
+%% Set time boundary conditions
 t0 = 0;
 tF = 45;
-problem.setTimeBounds(t0, tF);
-problem.setTimeBoundaries(t0, t0, tF, tF);
+problem.setTimeBoundaryConditions(t0, tF);
 
 %% Set state bounds
 xLow = [0; -10; 0; -5; 0];

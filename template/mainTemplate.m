@@ -11,10 +11,16 @@ nu = 1;  % Number of controls
 problem = TrajectoryProblem(nx, nu);
 
 %% Set time bounds
-% TODO: Set your desired time bounds
+t0Low = 0;
+t0Upp = 0;
+tFLow = 0;
+tFUpp = 1;
+problem.setTimeBounds(t0Low, t0Upp, tFLow, tFUpp);
+
+%% Set time boundary conditions
 t0 = 0;
 tF = 1;
-problem.setTimeBounds(t0, tF);
+problem.setTimeBoundaryConditions(t0, tF);
 
 %% Set state bounds
 % TODO: Define your state bounds

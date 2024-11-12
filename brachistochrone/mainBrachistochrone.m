@@ -93,14 +93,14 @@ disp('Time span:');
 disp(solution(end).z.timeSpan);
 
 disp('Initial state:');
-disp(solution(end).z.state(:,1));
+disp(solution(end).z.state(:,1)');
 disp('Target initial state:');
-disp(x0);
+disp(x0');
 
 disp('Final state:');
-disp(solution(end).z.state(:,end));
+disp(solution(end).z.state(:,end)');
 disp('Target final state:');
-disp(xF);
+disp(xF');
 
 % Check energy conservation
 E = 0.5 * solution(end).z.state(3,:).^2 + params.GRAVITY * solution(end).z.state(2,:);

@@ -70,5 +70,9 @@ problem.validate();
 % Solve the problem
 solution = problem.solveWithTrapezoidalCollocation();
 
+% Save the solution
+mkdir('results');
+save('results/solution.mat', 'solution');
+
 % Plot results
-plotResults('Solution', solution(end).z); 
+plotResults('Solution', solution(end).z, true); 

@@ -96,8 +96,12 @@ E = 0.5 * solution(end).z.state(3,:).^2 + params.GRAVITY * solution(end).z.state
 disp('Energy variation:');
 disp(['Max: ', num2str(max(E) - min(E))]);
 
+% Save the solution
+mkdir('results');
+save('results/solution.mat', 'solution');
+
 %% Plot results
-plotResults('Brachistochrone Solution', solution(end).z);
+plotResults('Brachistochrone Solution', solution(end).z, true);
 
 %% Compare with analytical solution
 compareWithAnalytical(solution(end).z);

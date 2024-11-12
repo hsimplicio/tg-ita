@@ -1,5 +1,5 @@
 function plotResults(figureName, z, saveFigures)
-    % Plots the results of the brachistochrone problem
+    % Plot the results of the EVTOL trajectory
     % figureName: name of the figure
     % z: solution structure
     % saveFigures: boolean to save the figures
@@ -10,40 +10,43 @@ function plotResults(figureName, z, saveFigures)
 
     figure('Name', figureName);
     
-    % Path in x-y plane
+    % Trajectory plot
     subplot(2,2,1)
-    plot(z.state(1,:), z.state(2,:), 'b-', 'LineWidth', 2)
+    plot(z.state(1,:), z.state(2,:), 'b-')
     xlabel('x [m]', 'FontSize', 12)
     ylabel('y [m]', 'FontSize', 12)
-    title('Caminho da Braquistócrona', 'FontSize', 12)
+    title('Trajetória do Vôo', 'FontSize', 12)
     grid on
-    axis equal
     set(gca, 'FontSize', 12);
     
-    % Velocity over time
+    % Velocity plot
     subplot(2,2,2)
-    plot(z.time, z.state(3,:), 'r-', 'LineWidth', 2)
+    plot(z.time, z.state(3,:), 'r-', ...
+         z.time, z.state(4,:), 'b-')
     xlabel('t [s]', 'FontSize', 12)
     ylabel('v [m/s]', 'FontSize', 12)
-    title('Perfil de Velocidade', 'FontSize', 12)
+    legend('v_x', 'v_y', 'FontSize', 12)
+    title('Velocidades', 'FontSize', 12)
     grid on
     set(gca, 'FontSize', 12);
 
-    % Control angle over time
+    % Energy plot
     subplot(2,2,3)
-    plot(z.time, z.control(1,:)*180/pi, 'g-', 'LineWidth', 2)
+    plot(z.time, z.state(5,:), 'k-')
     xlabel('t [s]', 'FontSize', 12)
-    ylabel('\theta [deg]', 'FontSize', 12)
-    title('Entrada de Controle', 'FontSize', 12)
+    ylabel('E [J]', 'FontSize', 12)
+    title('Consumo de Energia', 'FontSize', 12)
     grid on
     set(gca, 'FontSize', 12);
 
-    % Phase portrait
+    % Control inputs
     subplot(2,2,4)
-    plot(z.state(1,:), z.state(3,:), 'b-', 'LineWidth', 2)
-    xlabel('x [m]', 'FontSize', 12)
-    ylabel('v [m/s]', 'FontSize', 12)
-    title('Diagrama de Fase', 'FontSize', 12)
+    plot(z.time, z.control(1,:), 'r-', ...
+         z.time, z.control(2,:), 'b-')
+    xlabel('t [s]', 'FontSize', 12)
+    ylabel('T [N]', 'FontSize', 12)
+    legend('T_x', 'T_y', 'FontSize', 12)
+    title('Entradas de Controle', 'FontSize', 12)
     grid on
     set(gca, 'FontSize', 12);
 

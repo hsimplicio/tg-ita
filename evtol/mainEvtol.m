@@ -103,9 +103,9 @@ end
 
 disp(solution(end).output)
 
-% Save the final solution
-z = solution(end).z;
-% save(['data/solution-base-t', num2str(tF), '.mat'], 'z');
+% Save the solution
+mkdir('results');
+save(['results/solution-base-t', num2str(tF), '.mat'], 'solution');
 
 % Plot results
-plotEvtolResults('Final Solution', z);
+plotResults('Final Solution', solution(end).z, true);

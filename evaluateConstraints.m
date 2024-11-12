@@ -21,9 +21,7 @@ function [c, ceq] = evaluateConstraints(z, packInfo, dynamics, defectConstraints
     [physicalTime, physicalState, physicalControl] = unpackZ(z, packInfo, true);
 
     % Initialize inequality and equality constraints
-    c = [
-        time(1) - time(end)  % t0 <= tf
-    ];
+    c = [];
     ceq = [];
 
     % Evaluate defects constraints

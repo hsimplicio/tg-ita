@@ -454,7 +454,7 @@ classdef TrajectoryProblem < handle
                     
                     % Interpolate each state and control separately to maintain dimensions
                     for j = 1:obj.nx
-                        stateGuess(j,:) = interp1(timeOld, solution(i-1).z.state(j,:), timeGrid, 'spline');
+                        [stateGuess(j,:), ~] = spline2(timeOld, solution(i-1).z.state(j,:), solution(i-1).z.derivatives(j,:), timeGrid);
                     end
                     for j = 1:obj.nu
                         controlGuess(j,:) = interp1(timeOld, solution(i-1).z.control(j,:), timeGrid, 'linear', 'extrap');

@@ -15,6 +15,6 @@ function dx = brachistochroneDynamics(time, state, control, params)
     dx = [
         v .* cos(theta);           % dx/dt = v*cos(theta)
         v .* sin(theta);           % dy/dt = v*sin(theta)
-        g .* sin(theta);           % dv/dt = g*sin(theta)
+        -g .* sin(theta);          % dv/dt = -g*sin(theta)
     ];
 end 

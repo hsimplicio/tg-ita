@@ -56,6 +56,6 @@ function zGuess = physicalInitialGuess(problem, plotFlag)
         guess.time = time;
         guess.state = state;
         guess.control = control;
-        plotEvtolResults('Initial Guess', guess);
+        plotResults('Initial Guess', guess);
     end
 end

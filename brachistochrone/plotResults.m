@@ -15,7 +15,7 @@ function plotResults(figureName, z, saveFigures)
     plot(z.state(1,:), z.state(2,:), 'b-', 'LineWidth', 2)
     xlabel('x [m]', 'FontSize', 12)
     ylabel('y [m]', 'FontSize', 12)
-    title('Caminho da Braquistócrona', 'FontSize', 12)
+    title('Trajetória', 'FontSize', 12)
     grid on
     axis equal
     set(gca, 'FontSize', 12);

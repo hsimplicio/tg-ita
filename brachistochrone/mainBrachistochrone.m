@@ -13,7 +13,7 @@ problem = TrajectoryProblem(nx, nu);
 t0Low = 0;
 t0Upp = 0;
 tFLow = 0;
-tFUpp = 1;
+tFUpp = 2+1e-6;
 problem.setTimeBounds(t0Low, t0Upp, tFLow, tFUpp);
 
 %% Set time boundary conditions
@@ -22,8 +22,8 @@ tF = 1;  % Initial guess for final time (will be optimized)
 problem.setTimeBoundaryConditions(t0, tF);
 
 %% Set state bounds
-xLow = [0; -5; 0];     % Lower bounds: x≥-1, y≥-10, v≥0
-xUpp = [5; 0; 15];      % Upper bounds: x≤10, y≤1, v≤20
+xLow = [0; -5; 0];     % Lower bounds: x≥0, y≥-5, v≥0
+xUpp = [5; 0; 15];      % Upper bounds: x≤5, y≤0, v≤15
 problem.setStateBounds(xLow, xUpp);
 
 %% Set control bounds
@@ -37,15 +37,11 @@ problem.setParameters(params);
 
 %% Set boundary conditions
 x0 = [0; 0; 0];        % Start at origin with zero velocity
-xF = [5; -5; xUpp(3)-1]; % End at (5,-5) with free final velocity up to vMax
+xF = [5; -5; xUpp(3)]; % End at (5,-5) with free final velocity up to vMax
 problem.setBoundaryConditions(x0, xF);
 
 %% Set scaling
-% xScale = [
-%     max(abs(xF(1)), 1);  % Position x scale
-%     max(abs(xF(2)), 1);  % Position y scale
-%     sqrt(2*params.GRAVITY*abs(xF(2)))  % Natural velocity scale
-% ];
+% xScale = abs(xF);
 % uScale = 1;         % Angle scale
 % tScale = sqrt(2*abs(xF(2))/params.GRAVITY);   % Natural time scale
 
@@ -59,21 +55,21 @@ problem.setObjective(@boundaryObjective, @pathObjective);
 problem.setConstraints(@boundaryConstraints, @pathConstraints);
 
 %% Set solver options
-nGrid = [5, 10, 15, 20];  % Number of grid points for each iteration
+nGrid = [10, 20, 40];  % Number of grid points for each iteration
 options = optimoptions('fmincon');
 options.Display = 'iter';
 options.MaxFunEvals = 1e5;
-% options.Algorithm = 'sqp';
+options.Algorithm = 'sqp';
 options.EnableFeasibilityMode = true;
 options.SubproblemAlgorithm = 'cg';
 options.FiniteDifferenceType = 'central';  % More accurate gradients
-% options.FiniteDifferenceStepSize = 1e-6;   % Smaller step size
-% options.OptimalityTolerance = 1e-6;        % Tighter tolerance
-% options.ConstraintTolerance = 1e-6;        % Tighter tolerance
-% options.StepTolerance = 1e-10;             % Smaller steps
-options.MaxIterations = 2000;              % Increase if needed
-options.ScaleProblem = 'obj-and-constr';  % Add scaling
-options.HessianApproximation = 'bfgs';    % Use BFGS approximation
+options.FiniteDifferenceStepSize = 1e-6;   % Smaller step size
+options.OptimalityTolerance = 1e-6;        % Tighter tolerance
+options.ConstraintTolerance = 1e-6;        % Tighter tolerance
+options.StepTolerance = 1e-10;             % Smaller steps
+options.MaxIterations = 1000;              % Increase if needed
+options.ScaleProblem = true;               % Add scaling
+options.HessianApproximation = 'bfgs';     % Use BFGS approximation
 
 problem.setSolverOptions(options, nGrid);
 
@@ -84,7 +80,7 @@ problem.setConstraintsCheck(@checkConstraints);
 problem.setVariableNames({'x', 'y', 'v'}, {'theta'});
 
 %% Solve the problem
-zGuess = generateBrachistochroneGuess(problem, true);
+zGuess = generateBrachistochroneGuess(problem);
 solution = problem.solveWithTrapezoidalCollocation(zGuess);
 
 %% Display solution

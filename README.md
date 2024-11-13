@@ -92,7 +92,7 @@ mainBrachistochrone
 
 ## Documentation
 
-See the [detailed documentation](docs/Home) for:
+See the [detailed documentation](https://github.com/hsimplicio/tg-ita/wiki) for:
 - Complete API reference
 - Function specifications
 - Example explanations

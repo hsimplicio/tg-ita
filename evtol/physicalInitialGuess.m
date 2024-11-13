@@ -1,5 +1,8 @@
 function zGuess = physicalInitialGuess(problem, plotFlag)
     % Generate a physics-based initial guess for the EVTOL problem
+    if nargin < 2
+        plotFlag = false;
+    end
     
     % Extract problem parameters
     params = problem.getParameters();

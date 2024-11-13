@@ -1,4 +1,20 @@
 function zGuess = generateBrachistochroneGuess(problem, plotFlag)
+    % Generate an initial guess for the brachistochrone problem
+    %
+    % The guess is a parabolic path that connects the initial and final
+    % points. The velocity is estimated using energy conservation.
+    %
+    % Inputs:
+    %   problem - A TrajectoryProblem object
+    %   plotFlag - A boolean flag to plot the guess
+    %
+    % Outputs:
+    %   zGuess - A guess for the solution
+
+    if nargin < 2
+        plotFlag = false;
+    end
+
     % Extract problem parameters
     params = problem.getParameters();
     g = params.GRAVITY;

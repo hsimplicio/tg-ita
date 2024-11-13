@@ -30,9 +30,9 @@ uUpp = [1800; 2600];
 problem.setControlBounds(uLow, uUpp);
 
 %% Set scaling
-problem.setScaling('time', tF - t0);
-problem.setScaling('state', xUpp - xLow);
-problem.setScaling('control', uUpp - uLow);
+% problem.setScaling('time', tF - t0);
+% problem.setScaling('state', xUpp - xLow);
+% problem.setScaling('control', uUpp - uLow);
 
 %% Set parameters
 problem.setParameters(evtolParams());
@@ -57,19 +57,21 @@ hPathConstraint = [];                       % g(·) - Path Constraints
 problem.setConstraints(hBoundaryConstraint, hPathConstraint);
 
 %% Set solver options
-nGrid = [50, 80, 150, 190, 250];
+nGrid = [10, 20, 40, 80];
 options = optimoptions('fmincon');
 options.Display = 'iter';
 options.MaxFunEvals = 1e5;
-% options.Algorithm = 'sqp';
-% options.EnableFeasibilityMode = true;
-% options.SubproblemAlgorithm = 'cg';
+options.Algorithm = 'sqp';
+options.EnableFeasibilityMode = true;
+options.SubproblemAlgorithm = 'cg';
 options.FiniteDifferenceType = 'central';  % More accurate gradients
 options.FiniteDifferenceStepSize = 1e-6;   % Smaller step size
 options.OptimalityTolerance = 1e-6;        % Tighter tolerance
 options.ConstraintTolerance = 1e-6;        % Tighter tolerance
 options.StepTolerance = 1e-10;             % Smaller steps
 options.MaxIterations = 1000;              % Increase if needed
+options.ScaleProblem = true;               % Add scaling
+options.HessianApproximation = 'bfgs';     % Use BFGS approximation
 
 problem.setSolverOptions(options, nGrid);
 
@@ -83,7 +85,7 @@ problem.setVariableNames({'sx', 'sy', 'vx', 'vy', 'E'}, {'Tx', 'Ty'});
 problem.validate();
 
 % Optional: Get initial guess
-zGuess = physicalInitialGuess(problem, true);
+zGuess = physicalInitialGuess(problem);
 
 % Solve the problem
 solution = problem.solveWithTrapezoidalCollocation(zGuess);

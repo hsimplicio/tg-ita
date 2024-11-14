@@ -111,4 +111,4 @@ save('results/solution.mat', 'solution');
 plotResults('Brachistochrone Solution', solution(end).z, true);
 
 %% Compare with analytical solution
-compareWithAnalytical(solution(end).z);
+compareWithAnalytical(solution(end).z, true);

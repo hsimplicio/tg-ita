@@ -1,5 +1,9 @@
-function compareWithAnalytical(z)
+function compareWithAnalytical(z, plotFlag)
     % Compare numerical solution with analytical cycloid solution
+
+    if nargin < 2
+        plotFlag = false;
+    end
     
     % Extract final conditions
     xf = z.state(1,end);
@@ -21,14 +25,21 @@ function compareWithAnalytical(z)
     
     % Plot comparison
     figure('Name', 'Comparison with Analytical Solution');
-    plot(z.state(1,:), z.state(2,:), 'b-', 'LineWidth', 2, 'DisplayName', 'Numerical');
+    plot(z.state(1,:), z.state(2,:), 'b-', 'LineWidth', 2, 'DisplayName', 'Numérica');
     hold on
-    plot(x_analytical, y_analytical, 'r--', 'LineWidth', 2, 'DisplayName', 'Analytical');
-    plot([0 xf], [0 yf], 'k.', 'MarkerSize', 20, 'DisplayName', 'Endpoints');
+    plot(x_analytical, y_analytical, 'r--', 'LineWidth', 2, 'DisplayName', 'Analítica');
+    plot([0 xf], [0 yf], 'k.', 'MarkerSize', 20, 'DisplayName', 'Pontos Iniciais e Finais');
     grid on
-    xlabel('X Position [m]');
-    ylabel('Y Position [m]');
-    title('Comparison with Analytical Solution (Cycloid)');
+    xlabel('x [m]');
+    ylabel('y [m]');
+    title('Comparação com Solução Analítica (Ciclóide)');
     legend('Location', 'best');
     axis equal
+
+    if plotFlag
+        mkdir('figures');
+        savefig('figures/Brachistochrone Comparison.fig');
+        saveas(gcf, 'figures/Brachistochrone Comparison.svg');
+        saveas(gcf, 'figures/Brachistochrone Comparison.png');
+    end
 end 

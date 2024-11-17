@@ -28,6 +28,9 @@ function [c, ceq] = evaluateConstraints(z, packInfo, dynamics, defectConstraints
     if isempty(defectConstraints)
         error('Defect constraints function is not provided');
     end
+    if isempty(dynamics)
+        error('Dynamics function is not provided');
+    end
     % Evaluate derivatives
     derivatives = dynamics(physicalTime, physicalState, physicalControl);
     % Scale derivatives

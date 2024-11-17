@@ -24,7 +24,7 @@ function compareWithAnalytical(z, plotFlag)
     y_analytical = R*(1 - cos(theta));
     
     % Plot comparison
-    figure('Name', 'Comparison with Analytical Solution', 'FontSize', 12);
+    figure('Name', 'Comparison with Analytical Solution');
     plot(z.state(1,:), z.state(2,:), 'b-', 'LineWidth', 2, 'DisplayName', 'Numérica');
     hold on
     plot(x_analytical, y_analytical, 'r--', 'LineWidth', 2, 'DisplayName', 'Analítica');

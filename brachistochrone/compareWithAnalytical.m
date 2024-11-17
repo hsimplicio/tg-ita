@@ -24,17 +24,18 @@ function compareWithAnalytical(z, plotFlag)
     y_analytical = R*(1 - cos(theta));
     
     % Plot comparison
-    figure('Name', 'Comparison with Analytical Solution');
+    figure('Name', 'Comparison with Analytical Solution', 'FontSize', 12);
     plot(z.state(1,:), z.state(2,:), 'b-', 'LineWidth', 2, 'DisplayName', 'Numérica');
     hold on
     plot(x_analytical, y_analytical, 'r--', 'LineWidth', 2, 'DisplayName', 'Analítica');
     plot([0 xf], [0 yf], 'k.', 'MarkerSize', 20, 'DisplayName', 'Pontos Iniciais e Finais');
     grid on
-    xlabel('x [m]');
-    ylabel('y [m]');
-    title('Comparação com Solução Analítica (Ciclóide)');
-    legend('Location', 'best');
+    xlabel('x [m]', 'FontSize', 12);
+    ylabel('y [m]', 'FontSize', 12);
+    title('Comparação com Solução Analítica (Ciclóide)', 'FontSize', 12);
+    legend('Location', 'best', 'FontSize', 12);
     axis equal
+    set(gca, 'FontSize', 12);
 
     if plotFlag
         mkdir('figures');

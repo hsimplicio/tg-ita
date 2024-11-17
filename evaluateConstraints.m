@@ -25,16 +25,17 @@ function [c, ceq] = evaluateConstraints(z, packInfo, dynamics, defectConstraints
     ceq = [];
 
     % Evaluate defects constraints
-    if ~isempty(defectConstraints)
-        % Evaluate derivatives
-        derivatives = dynamics(physicalTime, physicalState, physicalControl);
-        % Scale derivatives
-        derivatives = derivatives ./ packInfo.scaling.stateScaling * packInfo.scaling.timeScaling;
-        % Evaluate defects
-        timeStep = (time(end) - time(1)) / packInfo.nGrid;
-        defects = defectConstraints(timeStep, state, derivatives);
-        ceq = [ceq; defects(:)];
+    if isempty(defectConstraints)
+        error('Defect constraints function is not provided');
     end
+    % Evaluate derivatives
+    derivatives = dynamics(physicalTime, physicalState, physicalControl);
+    % Scale derivatives
+    derivatives = derivatives ./ packInfo.scaling.stateScaling * packInfo.scaling.timeScaling;
+    % Evaluate defects
+    timeStep = (time(end) - time(1)) / packInfo.nGrid;
+    defects = defectConstraints(timeStep, state, derivatives);
+    ceq = [ceq; defects(:)];
     
     % Evaluate boundary constraints
     if ~isempty(boundaryConstraints)

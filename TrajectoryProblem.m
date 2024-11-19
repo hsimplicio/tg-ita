@@ -275,10 +275,10 @@ classdef TrajectoryProblem < handle
                     bndConditions.tF = obj.boundaryConditions.tF / obj.timeScaling;
                 end
                 if isfield(obj.boundaryConditions, 'x0')
-                    bndConditions.x0 = obj.boundaryConditions.x0 / obj.stateScaling;
+                    bndConditions.x0 = obj.boundaryConditions.x0 ./ obj.stateScaling;
                 end
                 if isfield(obj.boundaryConditions, 'xF')
-                    bndConditions.xF = obj.boundaryConditions.xF / obj.stateScaling;
+                    bndConditions.xF = obj.boundaryConditions.xF ./ obj.stateScaling;
                 end
                 obj.boundaryConstraints = @(x0, xF, t0, tF) hBoundaryConstraints(x0, xF, t0, tF, bndConditions);
             else

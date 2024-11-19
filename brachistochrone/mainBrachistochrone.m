@@ -81,6 +81,13 @@ problem.setVariableNames({'x', 'y', 'v'}, {'theta'});
 
 %% Solve the problem
 zGuess = generateBrachistochroneGuess(problem);
+s = struct();
+s.time = linspace(t0, tF, nGrid(1));
+s.state = zGuess(1:3,:);
+s.control = zGuess(4,:);
+
+plotResults('Brachistochrone Guess', s, true);
+
 solution = problem.solveWithTrapezoidalCollocation(zGuess);
 
 %% Display solution

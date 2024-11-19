@@ -66,13 +66,19 @@ problem.setSolverOptions(options, nGrid);
 
 %% Generate initial guess
 zGuess = generateSimpleMassGuess(problem);
+s = struct();
+s.time = linspace(0, 1, 30);
+s.state = zGuess(1:2,:);
+s.control = zGuess(3,:);
+
+plotResults('Simple Mass Guess', s, true);
 
 %% Solve the problem
 solution = problem.solveWithTrapezoidalCollocation(zGuess);
 
 %% Save solution
 mkdir('results');
-save('results/solution.mat', 'solution');
+% save('results/solution.mat', 'solution');
 
 %% Plot results
-plotResults('Simple Mass Solution', solution(end).z, true); 
+% plotResults('Simple Mass Solution', solution(end).z, true); 

@@ -87,6 +87,13 @@ problem.validate();
 % Optional: Get initial guess
 zGuess = physicalInitialGuess(problem);
 
+s = struct();
+s.time = linspace(t0, tF, nGrid(1));
+s.state = zGuess(1:5,:);
+s.control = zGuess(6:7,:);
+
+plotResults('EVTOL Guess', s, true);
+
 % Solve the problem
 solution = problem.solveWithTrapezoidalCollocation(zGuess);
 
